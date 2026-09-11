@@ -5,10 +5,21 @@ Provider comparison on the clips listed in `clips/manifest.csv`.
 ## Macro-average WER / CER
 
 | Language pair | sahara | groq | local_whisper |
-| ha-en | 1.000 / 0.969 | 1.125 / 0.746 | 1.325 / 1.031 |
-| ig-en | 0.619 / 0.299 | 0.644 / 0.478 | 1.009 / 0.548 |
-| pcm-en | 0.357 / 0.246 | 0.443 / 0.290 | 0.667 / 0.446 |
-| yo-en | 0.844 / 0.516 | 1.045 / 0.583 | 1.098 / 0.800 |
+| ha-en | 1.000 / 0.969 | 1.125 / 0.764 | 1.137 / 0.853 |
+| ig-en | 0.619 / 0.299 | 0.499 / 0.308 | 1.121 / 0.610 |
+| pcm-en | 0.357 / 0.246 | 0.433 / 0.271 | 0.637 / 0.423 |
+| yo-en | 0.844 / 0.516 | 0.963 / 0.598 | 1.064 / 0.811 |
+
+## Sahara queued-response fix
+
+The previous benchmark accepted HTTP 200 responses marked `FILE_QUEUED` as final. The Sahara service now polls every non-`FILE_TRANSCRIBED` response, including queued HTTP 200 responses and the documented 503 response path, at no more than one status request every two seconds.
+
+| Sahara benchmark | Successful clips | WER | CER |
+| --- | ---: | ---: | ---: |
+| Before queued-response fix | 20 | 0.705 | 0.508 |
+| After queued-response fix | 20 | 0.705 | 0.508 |
+
+The aggregate scores were unchanged on this 20-clip sample. The fix remains important because the old implementation could score an in-progress response as an empty transcript; this run confirms all 20 Sahara requests completed through the intended transcribed-result path.
 
 ## Intent exact-match accuracy
 
@@ -66,17 +77,6 @@ Provider comparison on the clips listed in `clips/manifest.csv`.
   - Reference: Awwwwn okelekwere okelekwere okelekwere, biko remember to share this video and.. yes o
   - Actual: Ọ kelekwere ọ kelekwere ọ kelesi remember we share this
 
-## Groq domain-prompt ablation
-
-The production Groq path keeps its banking vocabulary prompt enabled by default. This benchmark disables that prompt so the out-of-domain AfriSwitch clips measure transcription ability without banking-vocabulary bias.
-
-| Groq configuration | Successful clips | WER | CER |
-| --- | ---: | ---: | ---: |
-| Prompt enabled (prior run) | 20 | 0.848 | 0.607 |
-| Prompt disabled (current run) | 20 | 0.814 | 0.524 |
-
-Removing the prompt improved Groq by 0.033 WER and 0.083 CER on this 20-clip sample. The change was meaningful, but not dramatic; the prompt was not the sole cause of the high error rates. It also removed the earlier `ig`/`pcm` request failures because unsupported language hints now use Groq auto-detection.
-
 - `afriswitch/igbo_01.wav`
   - Reference: Pastor gị kpechaa kpechaa, you remain a fool. That's why
   - Actual: Pastọ ka ị kpechaa kpechaa, yor mee na full
@@ -85,16 +85,16 @@ Removing the prompt improved Groq by 0.033 WER and 0.083 CER on this 20-clip sam
 
 - `afriswitch/yoruba_00.wav`
   - Reference: kọn jọ kọn ṣaanu emi naa kọn tiẹ gba mi si ikan ninu awọn companies wọn so that emi naa a le maa ṣiṣẹ nbẹ and am very sure pe o ma fẹ assist mi jọọ ntori Ọlọrun o ṣẹ dear
-  - Actual:  kon jo kon shanwe mi nyo, kon se ikwa mi se kon nyo on komple ti zi nyo. So, dati, mi nali ma shi shenbe, and I'm very shocked but ma fei asistni. John Trio, Lauren. Ma apishi te.
+  - Actual:  Kondjo, kond shanwe, mi no, kond se igwa, mi se konno, kond pliz mo. So na ti, mi na li ma shishenwe, and I'm very shocked, but ma fei assist mi. John 3, o, don, re, mi. Ma apishete.
 - `afriswitch/yoruba_01.wav`
   - Reference: E ma binu. Se e mo pe okunrin ni mi and omo boys ni lati struggle lo. Omo boys jagun lo ni Omo boys? Tori pe o je omo boys? Se tori pe o je omo okunrin na lo se fe pa mi?
-  - Actual:  On my boy, she was angry with me. And on my boy's end, I have a struggle. On my boy's, he had a big fight. My boy, she was angry with my boy. She was angry to see my son
+  - Actual:  Meni, meni, meni.
 - `afriswitch/yoruba_02.wav`
   - Reference: to ba je nkan to ma wu e to ma mu nu e dun niyen anyway mo agree pelu e ah ah, ese oko mi thank you so much se iwo nan ti gboun e bayen, ori mi gidigidi gan ni ah ehm nkan to ma sele nisin nipe taba ma fi ri
-  - Actual:  Thank you so much Let's do it, guys Ok, let's do it Ah Now, let's start with the shell Time is up
+  - Actual:  ੭ we. Can we do you say what we say . You may be given your money! Thank you very much! Thank you very much! Alright. Now, we had a lot of things to say, so let's start.
 - `afriswitch/yoruba_03.wav`
   - Reference: Kisape olosi university oloko banse sabortion loto ode nani ade fe oyun ode yo iwo lóde walaye owa laye, common shift that to your daughter
-  - Actual:  Pisha Chibu lòs investi kon lòk wò mò chen ʷi à bò tion lò tò. O ndenon, nye à dè fè, o nden yò, o wò lò dè wà lá yè, lò wà lá yè. Come on, ship that to your daughter.
+  - Actual:  Pisha qebo u losi investi kon lo, komo jen shi abosho loto, o deno onye adefe, o nye ode yo, o wolo de wala ye, lolo wala ye. Come on, ship that to your daughter.
 - `afriswitch/yoruba_04.wav`
   - Reference: Mi ko ma ran, ko ma ma mu oriburuku ko mi mu, lọ funrarẹ, Abi ki o ri gun, kii foriburuku yé na? ti mo bímọ tán kín ṣẹ ma wa ọmọ ti ma rent ko lọ bámi ra ọja wa? Ẹ̀bi rẹ kó. ṣe wọ lo lọmọ ni? ẹ sẹbi rẹ ṣẹ.
   - Actual:  Mi koma wamu o li buruku komi mu, lafura le, abiki li o li gubi ki li buruku ye na. E ti mobi mata kense ma wawo, mo ti ma renti koloba mera o jawan. Che walo lomoni? E shebi rese.
@@ -106,19 +106,16 @@ Removing the prompt improved Groq by 0.033 WER and 0.083 CER on this 20-clip sam
   - Actual:  S'il vous a plaitit, vous m'accrochez, En avant de vous, A ce que vous exprimiez de votre chasse.
 - `afriswitch/hausa_02.wav`
   - Reference: Don dole haka na zama mai bada shawara saboda haka har guri ne da nima yanzu duk wani mai matsala zai zo ya same ni ga matsalata ko macen ko namiji to
-  - Actual:  Puri Pura Hukam nasa yon agata sa yon aapari yon arahata na lo ya zakti yon amayas amayas masah na amayas amayas amayas yon lechay yon lechay Ki
+  - Actual:  Puri bhūraṁ. Hakamāsavir mā tāpaśauraśa ya'kāri dhīrārātā nalā. Nāsak dhīra māyāsarāṁ na sātmā na kārāsarāṭa nalacayi yamalacayi. Tū.
 - `afriswitch/hausa_03.wav`
   - Reference: Maka ga gawan shi ma saduda amma ace kwana da kwanaki mutu a rasa inda yake
-  - Actual:  Pesakar ayam shukrishakum. Sambil matrim hirangan matrim. Matrim matrim shukrishakum.
+  - Actual:  Perseverance, Resurrection, Affection, Love, and Pleasure. Affection, Love,
 - `afriswitch/hausa_04.wav`
   - Reference: Sanya ganyayyaki, wake, man zaitun a cikin tsarin abincin mutum yakan kawo sauki da kuma taimakawa wajen kara lafiyar jiki. Har ila yau, yawaita cin naman shanu yana kara zafin wannan ciwo.
   - Actual:  Son of our action, watch out. Lose that to a considerable intruder. I can tell you so. I make you a character with incredible affection. Hello. I like to turn over a show. I'm a cautious luncheon
 - `afriswitch/igbo_00.wav`
   - Reference: Awwwwn okelekwere okelekwere okelekwere, biko remember to share this video and.. yes o
   - Actual:  oh
-- `afriswitch/igbo_01.wav`
-  - Reference: Pastor gị kpechaa kpechaa, you remain a fool. That's why
-  - Actual: [empty transcript]
 ### local_whisper
 
 - `afriswitch/yoruba_00.wav`
@@ -129,40 +126,37 @@ Removing the prompt improved Groq by 0.033 WER and 0.083 CER on this 20-clip sam
   - Actual: Perna, vi non c'è mapei o con l'animi Ando ma voice in l'acestrogo di ormigli Oma voice di jabi non è Ovo voice? Poi non puoi giamo a voice? Eh? Si è toli po' di omo puri non lui si fai a pally?
 - `afriswitch/yoruba_02.wav`
   - Reference: to ba je nkan to ma wu e to ma mu nu e dun niyen anyway mo agree pelu e ah ah, ese oko mi thank you so much se iwo nan ti gboun e bayen, ori mi gidigidi gan ni ah ehm nkan to ma sele nisin nipe taba ma fi ri
-  - Actual: Ben, storybook, Toma, I'm going to my moon right, don't you hear? I don't hear. I'm going to my moon right. Ah, sure. Ah, sure. And she'll call me. Thank you so much. That's why I'm not a boom, eh? All right, let me get you a gun, eh? Eh, now, I got your martial arts in AP. Toma, my theory.
+  - Actual: 我告訴 you 我告訴 you 不錯 妳 妳在夢中 第二次妳 妳 妳設計妳 妳 那妳左邊
 - `afriswitch/yoruba_03.wav`
   - Reference: Kisape olosi university oloko banse sabortion loto ode nani ade fe oyun ode yo iwo lóde walaye owa laye, common shift that to your daughter
-  - Actual: 私は活用する場所です。 私が必要となり、私は協力がありません。
+  - Actual: 視聴者のダメである museuではありれば variantsっている ということを実施することにも欄に伴っていく 同様に発生するのは現ément 幸福を Celebrいたメロディーンで 歩き 話は言われててず それは歌詞や 反県関する 与え生る という皆さんが 中国が
 - `afriswitch/yoruba_04.wav`
   - Reference: Mi ko ma ran, ko ma ma mu oriburuku ko mi mu, lọ funrarẹ, Abi ki o ri gun, kii foriburuku yé na? ti mo bímọ tán kín ṣẹ ma wa ọmọ ti ma rent ko lọ bámi ra ọja wa? Ẹ̀bi rẹ kó. ṣe wọ lo lọmọ ni? ẹ sẹbi rẹ ṣẹ.
   - Actual: Mey, Kamala, Kamala, Kamala, Mahmoudi, Pruku, Kamemo, Lafurale, Abkhirani, Kamekir Puri, Puku, Yena. Ezimobi, Madhaktin, Zehmao, Mahmoudi, Mahrenti, Kola, Mahmoudi, Dawa. Tevalo, Laman. Eh, Shabirase. Ah!
 - `afriswitch/hausa_00.wav`
   - Reference: Ya ce haraje haraje na Amurka a kan tarayya Turai za su kara rura wutar kalubalen da nahiyar tiri ke fama da su a cewarsa yakin kasuwancin da donald trump ya kaddamar
-  - Actual: Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, Anse, An
+  - Actual: Hi. Hi. Hello. Hi. hi. Hi. Hi. Hi. Hi. Hey. Hi. So... Hi. Hi. Hi. Hi. How are you? How are you? how is your belly? Hey. Hey. Hi. Hello. Hi. Nice to meet you all. No, I'm sure that
 - `afriswitch/hausa_01.wav`
   - Reference: Saboda yanzu abinda ake yi ana daukan yanzu kamar iskan gas cikon mota ana Taliya dashi
-  - Actual: Chme tra Revol까 Fife Consult Sa schnell Non strappani Knomp Chme tra Revol까
+  - Actual: Shit my 재미 I thought I'd just Fuck off Got to come Don't stop Dead our Shit my speech
 - `afriswitch/hausa_02.wav`
   - Reference: Don dole haka na zama mai bada shawara saboda haka har guri ne da nima yanzu duk wani mai matsala zai zo ya same ni ga matsalata ko macen ko namiji to
-  - Actual: tan Awwrrrrrrr rha rha rha rama rha rha rha rha rha rha rha rha se rha rha adjustment la raha da larsasha, rha rha rha s Doo pur s rins ma bham meta rha rha r included mistake y aldh 가� ting?
+  - Actual: colour 내려哭 assa passé cond hour day ill ahahahahahahahahahah j Properse wizard e Resworth level ebe ye
 - `afriswitch/hausa_03.wav`
   - Reference: Maka ga gawan shi ma saduda amma ace kwana da kwanaki mutu a rasa inda yake
   - Actual: [empty transcript]
 - `afriswitch/hausa_04.wav`
   - Reference: Sanya ganyayyaki, wake, man zaitun a cikin tsarin abincin mutum yakan kawo sauki da kuma taimakawa wajen kara lafiyar jiki. Har ila yau, yawaita cin naman shanu yana kara zafin wannan ciwo.
-  - Actual: Schaner auf, wir klar, wir schaht zurück, anscheide an den Füllte, akentelische Karte, wir taugelt für wir von anderen, für alle, Verlarte, Ich habe es nicht mehr. Ich habe es nicht mehr.
-- `afriswitch/pidgin_03.wav`
-  - Reference: Na the okal predo na e go call because like no people talk the bug stop satis stable So e must work round the drug to use enckure say make nobody cause am embarrassment and make nobody spoil him name
-  - Actual: Na niok apresidoo, na ilego copikos, na koimai wo utok ni bok som sa tis tebu So im moz wok round the clock to use and show us a minobody cos a min barassment a minobody spoi ni neop
+  - Actual: Schöner auf Wackfahr Lücher zeredrchen, Ich hatte das in den Fümmel Acktelecher Ich hatte das in den Fümmel Ich hatte das in den Fümmel Für die Fümmel Verlattes Schöner Hähl, Hähl, Hähl, Hähl, Hähl, Hähl.
 - `afriswitch/pidgin_04.wav`
   - Reference: Petroleum engineering petrol like petrol engineering why you leave petrol and come dey entertain us
   - Actual: Petroleum engineering. Petroleum engineering. Et why est-ce que tu l'as dit nos ?
 - `afriswitch/igbo_00.wav`
   - Reference: Awwwwn okelekwere okelekwere okelekwere, biko remember to share this video and.. yes o
-  - Actual: Ah... Ok, le pro... Eu sou... Porque eu me ama uma chica de esse vídeo, Anna.
+  - Actual: Ah! Ok, leionou, ok leionou, ok leionou, ok leionou, ok leionou, ok leionou, ok leionou, ok leionou... Isso é uma matricia de esse vídeo, ah!
 - `afriswitch/igbo_01.wav`
   - Reference: Pastor gị kpechaa kpechaa, you remain a fool. That's why
   - Actual: Păstogit pe cea pe cea urimeni ful, daz oa.
 - `afriswitch/igbo_04.wav`
   - Reference: Look at the road network in Asaba ogba ogologo okpanam road make rain fall there
-  - Actual: Lucas du code netwalkée n'a jamais. A ou à quoi que le code ? A ou à la route ? Ma crises forgakt.
+  - Actual: Le cartes du goût de networking a sa main. Où går le roe? Opera un roeut et un goût japoncil.

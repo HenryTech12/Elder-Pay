@@ -9,7 +9,8 @@ Docs: https://docs.voice.intron.io/docs/stt/file-upload-sync
 Notes on the API:
 - Sync endpoint only accepts audio <=120 seconds. Fine for our per-command
   voice clips; a longer recording would need the async /upload + /status
-  flow instead (see poll fallback below, used only if Sahara answers 503).
+    flow instead (see the polling path below, used when the response is not yet
+    transcribed, including Sahara's 503 and queued 200 responses).
 - `use_language_asr_input` takes the SAME codes we already use in
   languages.py (en, pcm, yo, ha, ig) — Sahara's docs list Yoruba-English,
   Hausa-English, Igbo-English and Pidgin-English as native code-switched
@@ -52,9 +53,7 @@ def _guess_content_type(filename: str) -> str:
 
 
 async def _poll_file_status(client: httpx.AsyncClient, file_id: str, headers: dict) -> str:
-    """Fallback for the 503 (still-processing) case the docs describe:
-    the sync endpoint can time out after 120s and return a file_id instead
-    of a transcript, at which point we poll /file/v1/status/{file_id}."""
+    """Poll a queued Sahara file until it is transcribed or fails."""
     for _ in range(20):  # ~40s of polling at 2s intervals, generous but bounded
         await asyncio.sleep(2)
         res = await client.get(
@@ -96,14 +95,17 @@ async def transcribe_audio(audio_bytes: bytes, filename: str, language_hint: Opt
             files=files,
         )
 
-        if res.status_code == 503:
-            # Docs: sync call can time out at 120s and return a file_id to poll instead.
-            body = res.json()
-            file_id = body.get("data", {}).get("file_id")
-            if not file_id:
-                res.raise_for_status()
+        body = res.json()
+        response_data = body.get("data", {})
+        processing_status = response_data.get("processing_status")
+        if processing_status == "FILE_TRANSCRIBED":
+            return response_data.get("audio_transcript", "")
+
+        file_id = response_data.get("file_id")
+        if file_id:
             return await _poll_file_status(client, file_id, headers)
 
         res.raise_for_status()
-        body = res.json()
-        return body.get("data", {}).get("audio_transcript", "")
+        raise RuntimeError(
+            f"Sahara returned incomplete response without file_id: {body}"
+        )
