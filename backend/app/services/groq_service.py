@@ -25,20 +25,28 @@ TRANSCRIPTION_PROMPT = (
     "Nigerian voice banking assistant. Common words: send, withdraw, deposit, "
     "balance, airtime, naira, thousand, hundred, Adewale, Ngozi, Ibrahim."
 )
+_WHISPER_LANGUAGES = {"en"}
 
 
-async def transcribe_audio(audio_bytes: bytes, filename: str, language_hint: Optional[str] = None) -> str:
+async def transcribe_audio(
+    audio_bytes: bytes,
+    filename: str,
+    language_hint: Optional[str] = None,
+    use_domain_prompt: bool = True,
+) -> str:
     client = _get_client()
     kwargs = {}
-    if language_hint:
+    if language_hint in _WHISPER_LANGUAGES:
         kwargs["language"] = language_hint
-    transcription = client.audio.transcriptions.create(
-        file=(filename or "audio.webm", audio_bytes),
-        model="whisper-large-v3",  # full model — noticeably more accurate on Yoruba/Hausa/Igbo than the -turbo tier, worth the extra latency
-        response_format="json",
-        prompt=TRANSCRIPTION_PROMPT,
+    request = {
+        "file": (filename or "audio.webm", audio_bytes),
+        "model": "whisper-large-v3",  # full model — noticeably more accurate on Yoruba/Hausa/Igbo than the -turbo tier, worth the extra latency
+        "response_format": "json",
         **kwargs,
-    )
+    }
+    if use_domain_prompt:
+        request["prompt"] = TRANSCRIPTION_PROMPT
+    transcription = client.audio.transcriptions.create(**request)
     return transcription.text
 
 

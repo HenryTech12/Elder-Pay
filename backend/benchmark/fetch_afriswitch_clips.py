@@ -31,6 +31,7 @@ Adjust LANGUAGES / CLIPS_PER_LANGUAGE below to taste.
 import csv
 import io
 import os
+from pathlib import Path
 
 import soundfile as sf
 from datasets import Audio, load_dataset
@@ -105,11 +106,13 @@ def main():
 
                 filename = f"{lang}_{count:02d}.wav"
                 out_path = os.path.join(OUTPUT_AUDIO_DIR, filename)
-                samples, sampling_rate = sf.read(io.BytesIO(audio["bytes"]))
-                sf.write(out_path, samples, sampling_rate)
+                audio_bytes = audio["bytes"]
+                sf.info(io.BytesIO(audio_bytes))
+                Path(out_path).write_bytes(audio_bytes)
+                manifest_audio_path = os.path.relpath(out_path, Path(MANIFEST_PATH).parent)
 
                 writer.writerow([
-                    out_path,
+                    manifest_audio_path,
                     transcript,
                     f"{lang_code}-en",
                     "general",       # domain: real-world speech, not fintech-specific

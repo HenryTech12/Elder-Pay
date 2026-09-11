@@ -74,7 +74,13 @@ async def run_clip(clip: BenchmarkClip, manifest_path: str, seen_sahara: bool) -
                 await asyncio.sleep(2.5)
             seen_sahara = True
         try:
-            actual = await stt_provider.transcribe(provider, audio_bytes, Path(path).name, language_hint)
+            actual = await stt_provider.transcribe(
+                provider,
+                audio_bytes,
+                Path(path).name,
+                language_hint,
+                use_domain_prompt=False,
+            )
             row = {
                 "audio_path": clip.audio_path,
                 "language_pair": clip.language_pair,
@@ -180,7 +186,7 @@ def write_report(rows: list[dict[str, Any]], output_path: Path) -> None:
             if provider_rows:
                 lines += [f"### {provider}", ""]
                 for row in provider_rows:
-                    actual = row["actual_transcript"] or f"[failure] {row['error']}"
+                    actual = row["actual_transcript"] or (f"[failure] {row['error']}" if row["error"] else "[empty transcript]")
                     lines += [f"- `{row['audio_path']}`", f"  - Reference: {row['reference_transcript'] or '[not supplied]'}", f"  - Actual: {actual}"]
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 

@@ -25,6 +25,7 @@ async def transcribe(
     audio_bytes: bytes,
     filename: str,
     language_hint: Optional[str] = None,
+    use_domain_prompt: bool = True,
 ) -> str:
     selected = provider or get_default_provider()
     try:
@@ -34,7 +35,9 @@ async def transcribe(
         raise ValueError(f"Unknown STT provider '{selected}'. Expected one of: {supported}") from err
 
     if selected_provider is STTProvider.GROQ:
-        return await groq_service.transcribe_audio(audio_bytes, filename, language_hint)
+        return await groq_service.transcribe_audio(
+            audio_bytes, filename, language_hint, use_domain_prompt=use_domain_prompt
+        )
     if selected_provider is STTProvider.SAHARA:
         return await sahara_service.transcribe_audio(audio_bytes, filename, language_hint)
     return await local_whisper_service.transcribe_audio(audio_bytes, filename, language_hint)
