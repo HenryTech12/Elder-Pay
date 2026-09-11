@@ -1,0 +1,5 @@
+# TODO: replace each placeholder row with a real local audio clip and metadata.
+audio_path,reference_transcript,language_pair,domain,accent_or_country,device_type,noise_condition,expected_intent
+TODO/replace-with-real-yo-clip.wav,,yo-en,fintech,,,TODO,
+TODO/replace-with-real-ha-clip.wav,,ha-en,fintech,,,TODO,
+TODO/replace-with-real-pcm-clip.wav,,pcm-en,fintech,,,TODO,

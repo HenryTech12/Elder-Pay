@@ -9,7 +9,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from app.services import bmoni_service, db, face_auth, groq_service, paystack_service, store, transaction_service, voice_auth, yarngpt_service
+from app.services import bmoni_service, db, face_auth, groq_service, paystack_service, stt_provider, store, transaction_service, voice_auth, yarngpt_service
 from app.services.languages import supported_languages
 from app.services.transaction_service import STATES
 
@@ -61,10 +61,14 @@ async def tts(body: TtsBody):
 
 
 @app.post("/api/voice/process")
-async def voice_process(audio: UploadFile = File(...), language: Optional[str] = Form(None)):
+async def voice_process(
+    audio: UploadFile = File(...),
+    language: Optional[str] = Form(None),
+    provider: Optional[str] = Form(None),
+):
     try:
         audio_bytes = await audio.read()
-        text = await groq_service.transcribe_audio(audio_bytes, audio.filename, language)
+        text = await stt_provider.transcribe(provider or stt_provider.get_default_provider(), audio_bytes, audio.filename, language)
         intent = await groq_service.parse_intent(text)
         return {"text": text, "intent": intent.model_dump()}
     except Exception as err:
@@ -73,10 +77,14 @@ async def voice_process(audio: UploadFile = File(...), language: Optional[str] =
 
 
 @app.post("/api/transcribe")
-async def transcribe(audio: UploadFile = File(...), language: Optional[str] = Form(None)):
+async def transcribe(
+    audio: UploadFile = File(...),
+    language: Optional[str] = Form(None),
+    provider: Optional[str] = Form(None),
+):
     try:
         audio_bytes = await audio.read()
-        text = await groq_service.transcribe_audio(audio_bytes, audio.filename, language)
+        text = await stt_provider.transcribe(provider or stt_provider.get_default_provider(), audio_bytes, audio.filename, language)
         return {"text": text}
     except Exception as err:
         logger.error("transcribe failed: %s", err, exc_info=True)

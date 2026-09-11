@@ -1,0 +1,10 @@
+audio_path,language_pair,domain,provider,status,error,reference_transcript,actual_transcript,wer_unnormalized,cer_unnormalized,wer_normalized,cer_normalized,intent_action_exact,intent_amount_exact,intent_recipient_exact,intent_error
+TODO/replace-with-real-yo-clip.wav,yo-en,fintech,sahara,failure,audio file not found: /workspaces/Elder-Pay/backend/benchmark/clips/TODO/replace-with-real-yo-clip.wav,,,,,,,,,,
+TODO/replace-with-real-yo-clip.wav,yo-en,fintech,groq,failure,audio file not found: /workspaces/Elder-Pay/backend/benchmark/clips/TODO/replace-with-real-yo-clip.wav,,,,,,,,,,
+TODO/replace-with-real-yo-clip.wav,yo-en,fintech,local_whisper,failure,audio file not found: /workspaces/Elder-Pay/backend/benchmark/clips/TODO/replace-with-real-yo-clip.wav,,,,,,,,,,
+TODO/replace-with-real-ha-clip.wav,ha-en,fintech,sahara,failure,audio file not found: /workspaces/Elder-Pay/backend/benchmark/clips/TODO/replace-with-real-ha-clip.wav,,,,,,,,,,
+TODO/replace-with-real-ha-clip.wav,ha-en,fintech,groq,failure,audio file not found: /workspaces/Elder-Pay/backend/benchmark/clips/TODO/replace-with-real-ha-clip.wav,,,,,,,,,,
+TODO/replace-with-real-ha-clip.wav,ha-en,fintech,local_whisper,failure,audio file not found: /workspaces/Elder-Pay/backend/benchmark/clips/TODO/replace-with-real-ha-clip.wav,,,,,,,,,,
+TODO/replace-with-real-pcm-clip.wav,pcm-en,fintech,sahara,failure,audio file not found: /workspaces/Elder-Pay/backend/benchmark/clips/TODO/replace-with-real-pcm-clip.wav,,,,,,,,,,
+TODO/replace-with-real-pcm-clip.wav,pcm-en,fintech,groq,failure,audio file not found: /workspaces/Elder-Pay/backend/benchmark/clips/TODO/replace-with-real-pcm-clip.wav,,,,,,,,,,
+TODO/replace-with-real-pcm-clip.wav,pcm-en,fintech,local_whisper,failure,audio file not found: /workspaces/Elder-Pay/backend/benchmark/clips/TODO/replace-with-real-pcm-clip.wav,,,,,,,,,,
