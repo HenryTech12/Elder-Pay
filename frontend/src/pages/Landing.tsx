@@ -92,14 +92,14 @@ const features = [
   { num: "01", icon: "🗣️", title: "Speak", body: "Say what you want in your own language. Groq's speech AI transcribes it in under a second." },
   { num: "02", icon: "🔊", title: "Confirm", body: "ElderPay reads the transaction back to you out loud before anything moves." },
   { num: "03", icon: "🪪", title: "Verify", body: "A real face check replaces PINs and passwords — nothing to remember, nothing to forget." },
-  { num: "04", icon: "✅", title: "Done", body: "BMONI processes the transfer and ElderPay confirms it out loud, with a digital receipt." }
+  { num: "04", icon: "✅", title: "Done", body: "Paystack processes the bank payout and ElderPay confirms it out loud, with a digital receipt." }
 ];
 
 const trust = [
   { icon: "🎙️", title: "Groq · Whisper", body: "Real speech-to-text transcription and LLM intent parsing, tuned for Nigerian languages and Naira amounts." },
   { icon: "🔈", title: "YarnGPT", body: "Nigerian-accented text-to-speech for every confirmation, balance, and success message the system speaks." },
   { icon: "🏦", title: "Paystack", body: "Real Nigerian bank-account name-enquiry, used to verify unrecognized send recipients before any transfer." },
-  { icon: "🔐", title: "BMONI", body: "Real sandbox wallet — created, KYC'd, and NGN-rail-activated — settling real withdrawals through a signed on-chain proposal." }
+  { icon: "🔐", title: "Paystack Transfers", body: "Real NGN bank payouts through a verified recipient, with account-level KYB required for live money movement." }
 ];
 
 const extraStats = [
@@ -110,7 +110,7 @@ const extraStats = [
 ];
 
 const revenueStreams = [
-  { icon: "💳", title: "Transaction fees", body: "A small fee on each send, withdrawal, or airtime top-up processed through BMONI." },
+  { icon: "💳", title: "Transaction fees", body: "A small fee on each send, withdrawal, or airtime top-up processed through the payment rails." },
   { icon: "🤝", title: "Bank partnerships", body: "Licensed banks pay to reach previously unbanked and underserved customers through the same terminals they already trust." },
   { icon: "🖥️", title: "POS integrations", body: "Agent networks pay for a voice-and-face layer that lets their existing hardware serve customers apps can't." },
   { icon: "⭐", title: "Premium features", body: "Optional add-ons for banks and agents — analytics, priority support, multi-branch management." }
@@ -152,9 +152,9 @@ export default function Landing() {
 
       <div style={styles.hero}>
         <div style={styles.heroText}>
-          <div style={styles.eyebrow}>✨ NITHUB Innovation Fair 2026 · AI + BMONI</div>
+          <div style={styles.eyebrow}>✨ NITHUB Innovation Fair 2026 · AI + Paystack</div>
           <h1 style={styles.h1}>Banking that speaks <span style={styles.em}>your</span> language.</h1>
-          <p style={styles.lede}>No apps to learn. No PINs to forget. Walk up to any participating POS agent, speak naturally in Yorùbá, Hausa, Igbo, or Pidgin, and ElderPay handles the rest — securely, through BMONI.</p>
+          <p style={styles.lede}>No apps to learn. No PINs to forget. Walk up to any participating POS agent, speak naturally in Yorùbá, Hausa, Igbo, or Pidgin, and ElderPay handles the rest — securely, through Paystack.</p>
           <div style={styles.heroCtas}>
             <Link to="/app" style={styles.btnPrimary}>Start speaking →</Link>
             <a href="#problem" style={styles.btnSecondary}>Why we built this</a>

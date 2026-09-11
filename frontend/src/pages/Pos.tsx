@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getTransaction, getHealth, getAgentBmoniStatus } from "../lib/api";
+import { getTransaction, getHealth, getAgentPayoutStatus } from "../lib/api";
 import DeviceFrame from "../components/DeviceFrame";
-import type { TransactionRecord, HealthStatus, AgentBmoniProfile } from "../types";
+import type { TransactionRecord, HealthStatus, AgentPayoutProfile } from "../types";
 
 function stateClass(state: string): "ok" | "err" | "pending" {
   if (state === "TRANSACTION_SUCCESS") return "ok";
-  if (["TRANSACTION_FAILED", "FACE_VERIFICATION_FAILED", "BMONI_API_ERROR", "INVALID_AMOUNT", "INSUFFICIENT_FUNDS", "UNKNOWN_RECIPIENT", "USER_CANCELLED"].includes(state)) return "err";
+  if (["TRANSACTION_FAILED", "FACE_VERIFICATION_FAILED", "PAYMENT_API_ERROR", "INVALID_AMOUNT", "INSUFFICIENT_FUNDS", "UNKNOWN_RECIPIENT", "USER_CANCELLED"].includes(state)) return "err";
   return "pending";
 }
 
@@ -34,12 +34,12 @@ export default function Pos() {
   const [notFound, setNotFound] = useState(false);
 
   const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [bmoni, setBmoni] = useState<AgentBmoniProfile | null>(null);
+  const [payout, setPayout] = useState<AgentPayoutProfile | null>(null);
   const [statusError, setStatusError] = useState(false);
 
   useEffect(() => {
-    Promise.all([getHealth(), getAgentBmoniStatus()])
-      .then(([h, b]) => { setHealth(h); setBmoni(b); })
+    Promise.all([getHealth(), getAgentPayoutStatus()])
+      .then(([h, p]) => { setHealth(h); setPayout(p); })
       .catch(() => setStatusError(true));
   }, []);
 
@@ -67,14 +67,14 @@ export default function Pos() {
         </header>
 
         <main style={s.main}>
-          <div style={s.sectionLabel}>Agent BMONI status</div>
+          <div style={s.sectionLabel}>Agent payout status</div>
           {statusError && <div style={s.hint}>Couldn't reach the backend — check it's running.</div>}
           {!statusError && !health && <div style={s.hint}>Loading...</div>}
           {health && (
             <>
-              <Card label="BMONI mode">
-                <span style={{ display: "inline-block", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 100, color: "#fff", background: health.bmoniMockMode ? "#C98A2C" : "#3D7A5C" }}>
-                  {health.bmoniMockMode ? "Sandbox-mock" : "Live sandbox"}
+              <Card label="Paystack">
+                <span style={{ display: "inline-block", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 100, color: "#fff", background: health.paystackConfigured ? "#3D7A5C" : "#C98A2C" }}>
+                  {health.paystackConfigured ? "Configured" : "Not configured"}
                 </span>
               </Card>
               <Card label="Account/face storage">
@@ -84,15 +84,14 @@ export default function Pos() {
               </Card>
             </>
           )}
-          {bmoni && (
+          {payout && (
             <>
-              <Card label="Agent onboarded">{bmoni.bmoniOnboarded ? "✓ Yes" : "Not yet"}</Card>
-              {bmoni.bmoniOnboarded && (
+              <Card label="Payout onboarded">{payout.payoutOnboarded ? "✓ Yes" : "Not yet"}</Card>
+              {payout.payoutOnboarded && (
                 <>
-                  <Card label="BMONI user ID"><span style={s.mono}>{truncateMiddle(bmoni.bmoniUserId || "—")}</span></Card>
-                  <Card label="Smart wallet ID"><span style={s.mono}>{truncateMiddle(bmoni.bmoniSmartWalletId || "—")}</span></Card>
-                  <Card label="Wallet address"><span style={s.mono}>{truncateMiddle(bmoni.bmoniWalletAddress || "—", 8)}</span></Card>
-                  <Card label="Withdrawal account linked">{bmoni.bmoniWithdrawalAccountId ? "✓ Linked" : "Not linked"}</Card>
+                  <Card label="Paystack recipient"><span style={s.mono}>{truncateMiddle(payout.paystackRecipientCode || "—")}</span></Card>
+                  <Card label="Bank account"><span style={s.mono}>{payout.paystackAccountNumber || "—"}</span></Card>
+                  <Card label="Bank code"><span style={s.mono}>{payout.paystackBankCode || "—"}</span></Card>
                 </>
               )}
             </>

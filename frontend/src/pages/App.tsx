@@ -68,7 +68,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   UNKNOWN_RECIPIENT: "I don't recognize that recipient. Try Adewale, Ngozi, or Ibrahim.",
   TRANSACTION_FAILED: "Your transaction could not be completed. No money was deducted.",
   FACE_VERIFICATION_FAILED: "We couldn't verify your identity. Please try again.",
-  BMONI_API_ERROR: "We're having trouble reaching BMONI right now. No money was deducted.",
+  PAYMENT_API_ERROR: "We're having trouble reaching the payment provider right now. No money was deducted.",
   NETWORK_ERROR: "We're having trouble connecting. Please check your connection and try again.",
   default: "Sorry, something went wrong. Please try again."
 };
@@ -359,7 +359,7 @@ export default function App() {
     setTx(sent);
 
     if (sent.state !== "TRANSACTION_SUCCESS") {
-      setErrorCode(sent.state === "BMONI_API_ERROR" ? "BMONI_API_ERROR" : "TRANSACTION_FAILED");
+      setErrorCode(sent.state === "PAYMENT_API_ERROR" ? "PAYMENT_API_ERROR" : "TRANSACTION_FAILED");
       setStep("error");
       return;
     }
@@ -425,7 +425,7 @@ export default function App() {
     clarify: ["One more thing", "I need a bit more detail."],
     error: ["Let's try that again", ""],
     face: ["Verify it's you", "A quick face check keeps this secure."],
-    processing: ["Processing", "Talking to BMONI sandbox..."],
+    processing: ["Processing", "Talking to the payment provider..."],
     balance: ["Your balance", ""],
     receipt: ["Done", "Your transfer is complete."]
   };
@@ -629,7 +629,7 @@ export default function App() {
           {step === "processing" && (
             <div style={s.statusStage}>
               <div style={s.spinner} />
-              <div>Sending to BMONI sandbox...</div>
+              <div>Sending to payment provider...</div>
               <div style={s.badgeRow}>
                 <span style={s.badge}>Test data only</span>
                 <span style={{ ...s.badge, ...s.badgeGold }}>Sandbox-mock</span>

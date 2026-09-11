@@ -9,7 +9,7 @@ import random
 from datetime import datetime, timezone
 from typing import Optional
 
-from app.models import Account, AgentBmoniProfile, Recipient, TransactionRecord
+from app.models import Account, AgentPayoutProfile, Recipient, TransactionRecord
 from app.services import db
 
 accounts: dict[str, Account] = {
@@ -29,9 +29,8 @@ recipients: dict[str, Recipient] = {
 
 transactions: dict[str, TransactionRecord] = {}
 
-# The POS agent's own BMONI identity — one profile shared platform-wide,
-# never per-customer. See AgentBmoniProfile's docstring.
-agent_bmoni_profile = AgentBmoniProfile()
+# The POS agent's payout recipient is shared platform-wide, never per-customer.
+agent_payout_profile = AgentPayoutProfile()
 
 
 def create_transaction_record(
@@ -52,7 +51,7 @@ def create_transaction_record(
         state="INTENT_DETECTED",
         createdAt=datetime.now(timezone.utc).isoformat(),
         faceVerified=False,
-        bmoniReference=None,
+        paymentReference=None,
         error=None,
     )
     if db.is_ready():
@@ -121,19 +120,19 @@ def adjust_balance(user_id: str, delta: int) -> Optional[Account]:
     return updated
 
 
-def get_agent_bmoni_profile() -> AgentBmoniProfile:
+def get_agent_payout_profile() -> AgentPayoutProfile:
     if db.is_ready():
-        return db.get_agent_bmoni_profile() or AgentBmoniProfile()
-    return agent_bmoni_profile
+        return db.get_agent_payout_profile() or AgentPayoutProfile()
+    return agent_payout_profile
 
 
-def update_agent_bmoni_profile(**patch) -> AgentBmoniProfile:
-    global agent_bmoni_profile
-    updated = get_agent_bmoni_profile().model_copy(update=patch)
+def update_agent_payout_profile(**patch) -> AgentPayoutProfile:
+    global agent_payout_profile
+    updated = get_agent_payout_profile().model_copy(update=patch)
     if db.is_ready():
-        db.update_agent_bmoni_profile(updated)
+        db.update_agent_payout_profile(updated)
     else:
-        agent_bmoni_profile = updated
+        agent_payout_profile = updated
     return updated
 
 

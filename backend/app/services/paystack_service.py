@@ -46,3 +46,63 @@ async def resolve_account(account_number: str, bank_code: str) -> dict:
         )
         res.raise_for_status()
         return res.json()["data"]
+
+
+# A live key only executes real transfers when the Paystack business account
+# has completed KYB verification. Test keys exercise the flow but move no real money.
+async def create_transfer_recipient(account_number: str, bank_code: str, account_name: str) -> dict:
+    async with httpx.AsyncClient(timeout=15) as client:
+        res = await client.post(
+            f"{PAYSTACK_BASE_URL}/transferrecipient",
+            json={
+                "type": "nuban",
+                "name": account_name,
+                "account_number": account_number,
+                "bank_code": bank_code,
+                "currency": "NGN",
+            },
+            headers=_headers(),
+        )
+        res.raise_for_status()
+        return res.json()["data"]
+
+
+async def initiate_transfer(amount_kobo: int, recipient_code: str, reason: str) -> dict:
+    """Initiate a Paystack balance transfer; ``amount_kobo`` is already in kobo."""
+    async with httpx.AsyncClient(timeout=15) as client:
+        res = await client.post(
+            f"{PAYSTACK_BASE_URL}/transfer",
+            json={
+                "source": "balance",
+                "amount": amount_kobo,
+                "recipient": recipient_code,
+                "reason": reason,
+            },
+            headers=_headers(),
+        )
+        res.raise_for_status()
+        return res.json()["data"]
+
+
+async def finalize_transfer(transfer_code: str, otp: str) -> dict:
+    """Finalize a transfer when OTP-on-transfer is enabled for the account."""
+    # Whether this step is needed depends on a dashboard setting; the API cannot
+    # detect that account configuration in advance.
+    async with httpx.AsyncClient(timeout=15) as client:
+        res = await client.post(
+            f"{PAYSTACK_BASE_URL}/transfer/finalize_transfer",
+            json={"transfer_code": transfer_code, "otp": otp},
+            headers=_headers(),
+        )
+        res.raise_for_status()
+        return res.json()["data"]
+
+
+async def get_transfer_status(transfer_id_or_code: str) -> dict:
+    async with httpx.AsyncClient(timeout=15) as client:
+        res = await client.get(
+            f"{PAYSTACK_BASE_URL}/transfer/{transfer_id_or_code}",
+            headers=_headers(),
+        )
+        res.raise_for_status()
+        return res.json()["data"]

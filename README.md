@@ -15,7 +15,7 @@ ElderPay replaces the app UI with a conversation. Speak in English, Nigerian Pid
 3. **Verify it's you** — a real face check, client-captured and server-matched, gates both login and every transaction.
 4. **Speak naturally** — "Send ten thousand naira to Adewale" — transcribed and parsed into an intent (amount, recipient, action).
 5. **Confirm out loud** — ElderPay reads the transaction back before anything moves, with a repeat button if the customer needs to hear it again.
-6. **BMONI executes** it — send, withdraw, deposit, airtime top-up, or a balance check — and a spoken + digital receipt confirms it. Send/withdraw/airtime/deposit all move the account's real balance; an insufficient-funds check blocks send/withdraw/airtime before confirmation if the amount exceeds it.
+6. **Paystack executes** real Nigerian bank withdrawals once the POS agent has onboarded a payout recipient; send, deposit, and airtime use the local demo ledger. A spoken + digital receipt confirms it.
 
 ## Architecture
 
@@ -59,7 +59,7 @@ Then open the printed local URL. Key routes: `/` (landing), `/onboarding` (sign 
 ## Honest limitations (sandbox/demo mode)
 
 - **Face verification is real for onboarded accounts**, but only ever simulated (openly, on-screen) for the two seeded legacy demo accounts that predate the feature.
-- **BMONI runs in mock mode** by default — no real money moves unless sandbox API keys are configured.
+- **Paystack transfers require a live key and completed business KYB**; until the POS payout recipient is onboarded, withdrawals use the mock ledger.
 - **Storage persists to Postgres if `DATABASE_URL` is set**; otherwise it's in-memory and restarting the backend clears every account and transaction. The `/pos` agent view shows which mode is actually active.
 - **Yorùbá/Hausa/Igbo/Pidgin translations** are best-effort, not reviewed by native speakers — sanity-check before a live pitch if you have access to one.
 - **Voice matching** (MFCC cosine similarity) exists in the backend but isn't wired into the active auth flow — not a production biometric claim either way.

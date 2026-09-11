@@ -19,7 +19,7 @@ TransactionState = Literal[
     "LOW_AI_CONFIDENCE",
     "TRANSACTION_FAILED",
     "FACE_VERIFICATION_FAILED",
-    "BMONI_API_ERROR",
+    "PAYMENT_API_ERROR",
 ]
 
 
@@ -42,7 +42,7 @@ class TransactionRecord(BaseModel):
     createdAt: str
     faceVerified: bool = False
     verificationMethod: Optional[Literal["face", "voice"]] = None
-    bmoniReference: Optional[str] = None
+    paymentReference: Optional[str] = None
     error: Optional[str] = None
     needsClarification: Optional[Literal["amount", "recipient", "accountNumber"]] = None
 
@@ -62,17 +62,12 @@ class Recipient(BaseModel):
     account: str
 
 
-class AgentBmoniProfile(BaseModel):
-    """The POS agent's (or platform's) own BMONI identity — not the
-    customer's. Customers only ever have a local ElderPay ledger
-    balance (Account.balance); the agent is the one real, KYC'd business
-    operator whose wallet actually moves money through BMONI when cash
-    is dispensed. Onboarded once, shared across every customer session."""
-    bmoniUserId: Optional[str] = None
-    bmoniSmartWalletId: Optional[str] = None
-    bmoniWalletAddress: Optional[str] = None
-    bmoniWithdrawalAccountId: Optional[str] = None
-    bmoniOnboarded: bool = False
+class AgentPayoutProfile(BaseModel):
+    """The shared POS agent payout recipient used for real withdrawals."""
+    paystackRecipientCode: Optional[str] = None
+    paystackAccountNumber: Optional[str] = None
+    paystackBankCode: Optional[str] = None
+    payoutOnboarded: bool = False
 
 
 class Receipt(BaseModel):

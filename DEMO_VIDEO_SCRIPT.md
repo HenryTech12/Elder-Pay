@@ -41,13 +41,13 @@ Narrate this as *her* interaction, not a generic feature tour — "she tells the
 
 > "This isn't a mockup. Every piece talks to a real service — and you don't have to take my word for it, it's right here in the product."
 
-- Point at the "Agent BMONI status" panel: mode badge ("Live sandbox," not mock), "Agent onboarded: Yes," and the real (truncated) `bmoniUserId` / smart wallet ID / wallet address — say: *"This is a real BMONI sandbox wallet — created, KYC'd, and NGN-rail-activated against their live sandbox, not simulated."*
+- Point at the "Agent payout status" panel: Paystack configured, "Payout onboarded: Yes," and the real (truncated) recipient code and bank details — say: *"This is a verified Paystack payout recipient; with business KYB complete, withdrawals can move real NGN to the agent's bank account."*
 - Point at the "Account/face storage" badge: say: *"Accounts, face data, and transaction history all persist to Postgres — nothing gets wiped if the server restarts."*
 - One line on the AI stack: *"Speech-to-text and intent parsing run on Groq's Whisper and LLM models; the voice she just heard is YarnGPT's Nigerian-accented text-to-speech — both real, both live."*
 
 ## 2:45–2:55 — Honesty + impact close (presenter to camera)
 
-> "We've been upfront throughout: face verification is the real, mandatory security gate for every account we onboard — a live facial descriptor captured and matched, not a photo, not a stand-in. Voice does real work too — real speech-to-text, real intent parsing, real spoken confirmations — it's just not the thing deciding whether money moves; that's reserved for face. What's real is the full transaction pipeline, the BMONI sandbox integration, and a genuine attempt to close the gap that research keeps finding in Nigeria's elderly population — not through more literacy campaigns, but by removing the requirement to read at all. That's ElderPay."
+> "We've been upfront throughout: face verification is the real, mandatory security gate for every account we onboard — a live facial descriptor captured and matched, not a photo, not a stand-in. Voice does real work too — real speech-to-text, real intent parsing, real spoken confirmations — it's just not the thing deciding whether money moves; that's reserved for face. What's real is the full transaction pipeline, the Paystack payout integration, and a genuine attempt to close the gap that research keeps finding in Nigeria's elderly population — not through more literacy campaigns, but by removing the requirement to read at all. That's ElderPay."
 
 ## 2:55–3:00 — Card / call to action
 
@@ -71,7 +71,7 @@ If a judge asks "where's that stat from" during Q&A, you have a real, named sour
 - Have the app already deployed and warmed up (hit `/api/health` once before recording) so there's no cold-start lag on camera.
 - Onboard your test customer *before* you start the timed take, or budget the extra time into your run if you're doing it live — either works, but decide ahead of time so you're not improvising the pacing.
 - Real face capture needs decent lighting and a camera that can actually see a face — test this on the exact device/browser you'll record with beforehand, not on the day.
-- If BMONI's bank-verification sandbox is still blocked when you record, skip that specific sub-step — the onboarding/KYC/wallet proof above doesn't depend on it.
+- If Paystack's account resolution or business KYB is still blocked when you record, use the mock-ledger fallback and describe the live payout as an account-level deployment step.
 - Keep a phone timer visible off-camera; if you're running long, cut the language-switch step (10) first, then the balance check (9) — both are nice-to-haves, not load-bearing for the judging criteria.
 - Practice the hook (0:00–0:25) out loud once before recording — it's the densest part with three cited stats back to back, and it needs to sound natural, not read off a page.
 - The timings above are a pacing guide, not a stopwatch script — rehearse once, see where you actually land, and adjust rather than rushing to hit exact numbers on the real take.

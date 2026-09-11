@@ -32,7 +32,7 @@ Do a full real-key, real-network dry run — ideally with a native speaker sanit
 
 - Face verification is real for any account onboarded through the app (client-side descriptor capture via face-api.js, server-side Euclidean-distance match) — the only place it's simulated is a disclosed fallback ("Simulate: match/no match") for the two seeded demo accounts, which predate the feature and have no face on file.
 - A voice-authentication path (cosine-similarity heuristic over MFCC vectors) exists in the backend and is still tested, but it's not wired into the active login/transaction flow — face is the sole biometric gate today; voice is parked for a later phase when it scales back in.
-- BMONI runs in mock mode by default — no real money moves unless the sandbox API keys are configured.
+- Paystack transfers require a live key and completed business KYB; withdrawals use the mock ledger until the POS payout recipient is onboarded.
 - Storage persists to Postgres if `DATABASE_URL` is set; otherwise it's in-memory and restarting the backend clears every account and transaction. Check the "Account/face storage" badge on `/pos` to see which mode is actually active.
 - Yorùbá/Hausa/Igbo/Pidgin phrase translations are best-effort, not reviewed by a native speaker.
 

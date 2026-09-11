@@ -17,7 +17,7 @@ import os
 from contextlib import contextmanager
 from typing import Iterator, Optional
 
-from app.models import Account, AgentBmoniProfile, TransactionRecord
+from app.models import Account, AgentPayoutProfile, TransactionRecord
 
 logger = logging.getLogger("nativepay.db")
 
@@ -55,17 +55,16 @@ CREATE TABLE IF NOT EXISTS transactions (
     created_at TEXT NOT NULL,
     face_verified BOOLEAN NOT NULL DEFAULT FALSE,
     verification_method TEXT,
-    bmoni_reference TEXT,
+    payment_reference TEXT,
     error TEXT,
     needs_clarification TEXT
 );
-CREATE TABLE IF NOT EXISTS agent_bmoni_profile (
+CREATE TABLE IF NOT EXISTS agent_payout_profile (
     id INTEGER PRIMARY KEY DEFAULT 1,
-    bmoni_user_id TEXT,
-    bmoni_smart_wallet_id TEXT,
-    bmoni_wallet_address TEXT,
-    bmoni_withdrawal_account_id TEXT,
-    bmoni_onboarded BOOLEAN NOT NULL DEFAULT FALSE
+    paystack_recipient_code TEXT,
+    paystack_account_number TEXT,
+    paystack_bank_code TEXT,
+    payout_onboarded BOOLEAN NOT NULL DEFAULT FALSE
 );
 """
 
@@ -225,7 +224,7 @@ def get_voiceprint(user_id: str) -> Optional[list[float]]:
 
 _TX_COLUMNS = (
     "id, user_id, action, amount, recipient, recipient_account, confidence, state, "
-    "created_at, face_verified, verification_method, bmoni_reference, error, needs_clarification"
+    "created_at, face_verified, verification_method, payment_reference, error, needs_clarification"
 )
 
 
@@ -233,7 +232,7 @@ def _row_to_transaction(row) -> TransactionRecord:
     return TransactionRecord(
         id=row[0], userId=row[1], action=row[2], amount=row[3], recipient=row[4],
         recipientAccount=row[5], confidence=row[6], state=row[7], createdAt=row[8],
-        faceVerified=row[9], verificationMethod=row[10], bmoniReference=row[11],
+        faceVerified=row[9], verificationMethod=row[10], paymentReference=row[11],
         error=row[12], needsClarification=row[13],
     )
 
@@ -244,7 +243,7 @@ def create_transaction(tx: TransactionRecord) -> None:
             f"INSERT INTO transactions ({_TX_COLUMNS}) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
             (tx.id, tx.userId, tx.action, tx.amount, tx.recipient, tx.recipientAccount,
              tx.confidence, tx.state, tx.createdAt, tx.faceVerified, tx.verificationMethod,
-             tx.bmoniReference, tx.error, tx.needsClarification),
+             tx.paymentReference, tx.error, tx.needsClarification),
         )
 
 
@@ -260,9 +259,9 @@ def update_transaction(tx: TransactionRecord) -> None:
         cur.execute(
             """UPDATE transactions SET action=%s, amount=%s, recipient=%s, recipient_account=%s,
                confidence=%s, state=%s, face_verified=%s, verification_method=%s,
-               bmoni_reference=%s, error=%s, needs_clarification=%s WHERE id=%s""",
+               payment_reference=%s, error=%s, needs_clarification=%s WHERE id=%s""",
             (tx.action, tx.amount, tx.recipient, tx.recipientAccount, tx.confidence, tx.state,
-             tx.faceVerified, tx.verificationMethod, tx.bmoniReference, tx.error,
+             tx.faceVerified, tx.verificationMethod, tx.paymentReference, tx.error,
              tx.needsClarification, tx.id),
         )
 
@@ -277,34 +276,33 @@ def list_transactions(user_id: Optional[str] = None) -> list[TransactionRecord]:
     return [_row_to_transaction(r) for r in rows]
 
 
-_AGENT_COLUMNS = "bmoni_user_id, bmoni_smart_wallet_id, bmoni_wallet_address, bmoni_withdrawal_account_id, bmoni_onboarded"
+_AGENT_COLUMNS = "paystack_recipient_code, paystack_account_number, paystack_bank_code, payout_onboarded"
 
 
-def get_agent_bmoni_profile() -> Optional[AgentBmoniProfile]:
+def get_agent_payout_profile() -> Optional[AgentPayoutProfile]:
     """None means no row has ever been written — distinct from a real,
     written-but-blank profile, so callers can tell "never onboarded" from
     "this table hasn't been touched yet" if that distinction ever matters."""
     with _cursor() as cur:
-        cur.execute(f"SELECT {_AGENT_COLUMNS} FROM agent_bmoni_profile WHERE id = 1")
+        cur.execute(f"SELECT {_AGENT_COLUMNS} FROM agent_payout_profile WHERE id = 1")
         row = cur.fetchone()
     if not row:
         return None
-    return AgentBmoniProfile(
-        bmoniUserId=row[0], bmoniSmartWalletId=row[1], bmoniWalletAddress=row[2],
-        bmoniWithdrawalAccountId=row[3], bmoniOnboarded=row[4],
+    return AgentPayoutProfile(
+        paystackRecipientCode=row[0], paystackAccountNumber=row[1], paystackBankCode=row[2],
+        payoutOnboarded=row[3],
     )
 
 
-def update_agent_bmoni_profile(profile: AgentBmoniProfile) -> None:
+def update_agent_payout_profile(profile: AgentPayoutProfile) -> None:
     with _cursor() as cur:
         cur.execute(
-            f"""INSERT INTO agent_bmoni_profile (id, {_AGENT_COLUMNS}) VALUES (1, %s, %s, %s, %s, %s)
+              f"""INSERT INTO agent_payout_profile (id, {_AGENT_COLUMNS}) VALUES (1, %s, %s, %s, %s)
                ON CONFLICT (id) DO UPDATE SET
-                 bmoni_user_id = EXCLUDED.bmoni_user_id,
-                 bmoni_smart_wallet_id = EXCLUDED.bmoni_smart_wallet_id,
-                 bmoni_wallet_address = EXCLUDED.bmoni_wallet_address,
-                 bmoni_withdrawal_account_id = EXCLUDED.bmoni_withdrawal_account_id,
-                 bmoni_onboarded = EXCLUDED.bmoni_onboarded""",
-            (profile.bmoniUserId, profile.bmoniSmartWalletId, profile.bmoniWalletAddress,
-             profile.bmoniWithdrawalAccountId, profile.bmoniOnboarded),
+                  paystack_recipient_code = EXCLUDED.paystack_recipient_code,
+                  paystack_account_number = EXCLUDED.paystack_account_number,
+                  paystack_bank_code = EXCLUDED.paystack_bank_code,
+                  payout_onboarded = EXCLUDED.payout_onboarded""",
+              (profile.paystackRecipientCode, profile.paystackAccountNumber, profile.paystackBankCode,
+               profile.payoutOnboarded),
         )

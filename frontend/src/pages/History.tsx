@@ -6,7 +6,7 @@ import type { TransactionRecord } from "../types";
 
 function stateColor(state: string): string {
   if (state === "TRANSACTION_SUCCESS") return "#3D7A5C";
-  if (["TRANSACTION_FAILED", "FACE_VERIFICATION_FAILED", "BMONI_API_ERROR", "INVALID_AMOUNT", "INSUFFICIENT_FUNDS", "UNKNOWN_RECIPIENT", "USER_CANCELLED"].includes(state)) return "#B23A2E";
+  if (["TRANSACTION_FAILED", "FACE_VERIFICATION_FAILED", "PAYMENT_API_ERROR", "INVALID_AMOUNT", "INSUFFICIENT_FUNDS", "UNKNOWN_RECIPIENT", "USER_CANCELLED"].includes(state)) return "#B23A2E";
   return "#C98A2C";
 }
 

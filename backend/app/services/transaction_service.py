@@ -7,9 +7,9 @@ produces identical transaction behavior against the same frontend.
 
 from typing import Optional
 
-from app.models import AgentBmoniProfile, TransactionRecord
-from app.services import bmoni_service, paystack_service, store
-from app.services.bmoni_service import create_transfer
+from app.models import AgentPayoutProfile, TransactionRecord
+from app.services import mock_ledger, paystack_service, store
+from app.services.mock_ledger import create_transfer
 
 STATES = {
     "INTENT_DETECTED": "INTENT_DETECTED",
@@ -27,7 +27,7 @@ STATES = {
     "LOW_AI_CONFIDENCE": "LOW_AI_CONFIDENCE",
     "TRANSACTION_FAILED": "TRANSACTION_FAILED",
     "FACE_VERIFICATION_FAILED": "FACE_VERIFICATION_FAILED",
-    "BMONI_API_ERROR": "BMONI_API_ERROR",
+    "PAYMENT_API_ERROR": "PAYMENT_API_ERROR",
 }
 
 LOW_CONFIDENCE_THRESHOLD = 0.55
@@ -157,42 +157,40 @@ async def execute_transaction(tx_id: str) -> Optional[TransactionRecord]:
 
     try:
         if tx.action == "withdraw":
-            agent = store.get_agent_bmoni_profile()
-            if agent.bmoniOnboarded and agent.bmoniSmartWalletId and agent.bmoniWithdrawalAccountId:
+            agent = store.get_agent_payout_profile()
+            if agent.payoutOnboarded and agent.paystackRecipientCode:
                 reference = await _execute_real_nigeria_withdrawal(agent, tx.amount or 0)
             else:
                 result = await create_transfer(tx.amount, "self (withdrawal)")
                 reference = result["reference"]
             store.adjust_balance(tx.userId, -(tx.amount or 0))
-            return store.update_transaction(tx_id, state=STATES["TRANSACTION_SUCCESS"], bmoniReference=reference)
+            return store.update_transaction(tx_id, state=STATES["TRANSACTION_SUCCESS"], paymentReference=reference)
         if tx.action in ("send", "airtime"):
             result = await create_transfer(tx.amount, tx.recipient or "self")
             store.adjust_balance(tx.userId, -(tx.amount or 0))
-            return store.update_transaction(tx_id, state=STATES["TRANSACTION_SUCCESS"], bmoniReference=result["reference"])
+            return store.update_transaction(tx_id, state=STATES["TRANSACTION_SUCCESS"], paymentReference=result["reference"])
         if tx.action == "deposit":
             result = await create_transfer(tx.amount, "self (deposit)")
             store.adjust_balance(tx.userId, tx.amount or 0)
-            return store.update_transaction(tx_id, state=STATES["TRANSACTION_SUCCESS"], bmoniReference=result["reference"])
+            return store.update_transaction(tx_id, state=STATES["TRANSACTION_SUCCESS"], paymentReference=result["reference"])
         return store.update_transaction(tx_id, state=STATES["TRANSACTION_SUCCESS"])
     except Exception as err:
-        return store.update_transaction(tx_id, state=STATES["BMONI_API_ERROR"], error=str(err))
+        return store.update_transaction(tx_id, state=STATES["PAYMENT_API_ERROR"], error=str(err))
 
 
-async def _execute_real_nigeria_withdrawal(agent: AgentBmoniProfile, amount: int) -> str:
-    """Real money movement: initiates the BMONI offramp proposal against
-    the POS agent's own onboarded wallet (never the customer's — see
-    AgentBmoniProfile), signs the EIP-712 payload with our owner key,
-    submits it, and returns the proposal ID as the receipt reference.
-    The customer's local ledger balance is adjusted separately by the
-    caller — this only represents the agent's own real cash-out."""
-    initiated = await bmoni_service.initiate_nigeria_withdrawal(
-        agent.bmoniUserId, agent.bmoniSmartWalletId, agent.bmoniWithdrawalAccountId, f"{amount:.2f}"
+async def _execute_real_nigeria_withdrawal(agent: AgentPayoutProfile, amount: int) -> str:
+    initiated = await paystack_service.initiate_transfer(
+        amount * 100, agent.paystackRecipientCode, "ElderPay cash withdrawal"
     )
-    if initiated.get("signPayloadPending"):
-        raise RuntimeError("BMONI withdrawal sign payload not ready yet — retry shortly")
-    signature = bmoni_service.sign_withdrawal_payload(initiated["signPayload"])
-    await bmoni_service.submit_proposal_signature(agent.bmoniUserId, initiated["proposalId"], signature)
-    return initiated["proposalId"]
+    transfer_code = initiated.get("transfer_code") or initiated.get("id")
+    if not transfer_code:
+        raise RuntimeError("Paystack transfer response did not include a transfer code")
+    if initiated.get("status") == "otp":
+        raise RuntimeError("Paystack transfer requires OTP finalization")
+    status = await paystack_service.get_transfer_status(str(transfer_code))
+    if status.get("status") not in ("success", "pending", "otp"):
+        raise RuntimeError(f"Paystack transfer failed with status {status.get('status')}")
+    return initiated.get("reference") or transfer_code
 
 
 def get_account_balance(user_id: str) -> Optional[int]:

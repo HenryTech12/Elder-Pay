@@ -1,7 +1,7 @@
 import pytest
 
-from app.models import AgentBmoniProfile
-from app.services import bmoni_service, db, face_auth, paystack_service, store, voice_auth
+from app.models import AgentPayoutProfile
+from app.services import db, face_auth, paystack_service, store, voice_auth
 from app.services import transaction_service as ts
 
 FAKE_RESOLVED_NAMES = {
@@ -101,7 +101,7 @@ async def test_full_happy_path():
     ts.record_face_verification(tx.id, True)
     result = await ts.execute_transaction(tx.id)
     assert result.state == ts.STATES["TRANSACTION_SUCCESS"]
-    assert result.bmoniReference is not None
+    assert result.paymentReference is not None
 
 
 @pytest.mark.asyncio
@@ -120,7 +120,7 @@ async def test_idempotency_does_not_resend():
     ts.record_face_verification(tx.id, True)
     first = await ts.execute_transaction(tx.id)
     second = await ts.execute_transaction(tx.id)
-    assert first.bmoniReference == second.bmoniReference
+    assert first.paymentReference == second.paymentReference
 
 
 def test_user_cancellation():
@@ -174,11 +174,8 @@ def test_insufficient_funds_blocks_withdrawal():
 
 
 @pytest.mark.asyncio
-async def test_withdraw_uses_mock_transfer_when_agent_not_bmoni_onboarded():
-    """By default the POS agent's BMONI profile isn't onboarded, so
-    withdrawals keep using the generic mocked create_transfer — the real
-    BMONI chain is never attempted. Customers themselves never carry
-    BMONI fields at all; only the shared agent profile does."""
+async def test_withdraw_uses_mock_transfer_when_agent_not_onboarded():
+    """Without a payout recipient, withdrawals use the generic mock ledger."""
     store.create_account("not-onboarded-user", "Not Onboarded", "en")
     before = store.get_account("not-onboarded-user").balance
 
@@ -188,42 +185,32 @@ async def test_withdraw_uses_mock_transfer_when_agent_not_bmoni_onboarded():
     result = await ts.execute_transaction(tx.id)
 
     assert result.state == ts.STATES["TRANSACTION_SUCCESS"]
-    assert result.bmoniReference.startswith("EP-MOCK-")
+    assert result.paymentReference.startswith("EP-MOCK-")
     assert store.get_account("not-onboarded-user").balance == before - 3000
 
 
 @pytest.mark.asyncio
-async def test_withdraw_uses_real_bmoni_chain_when_agent_onboarded(monkeypatch):
-    """Once the POS agent's shared BMONI profile is onboarded + bank-
-    linked (store.update_agent_bmoni_profile), withdrawal for ANY
-    customer goes through the real initiate -> sign -> submit chain
-    instead of the generic mock — the agent's wallet moves the money,
-    the customer's own local ledger balance is what's debited."""
+async def test_withdraw_uses_real_paystack_transfer_when_agent_onboarded(monkeypatch):
+    """An onboarded payout recipient routes any customer's withdrawal to Paystack."""
     store.create_account("onboarded-flow-user", "Onboarded Flow Tester", "en")
     before = store.get_account("onboarded-flow-user").balance
 
-    monkeypatch.setattr(store, "agent_bmoni_profile", AgentBmoniProfile(
-        bmoniUserId="agent-bmoni-1", bmoniSmartWalletId="agent-wallet-1",
-        bmoniWithdrawalAccountId="agent-bank-acct-1", bmoniOnboarded=True,
+    monkeypatch.setattr(store, "agent_payout_profile", AgentPayoutProfile(
+        paystackRecipientCode="RCP_agent-1", payoutOnboarded=True,
     ))
 
     calls = {}
 
-    async def fake_initiate(user_id, source_smart_wallet_id, bank_account_id, from_amount):
-        calls["initiate"] = (user_id, source_smart_wallet_id, bank_account_id, from_amount)
-        return {"proposalId": "prop-1", "signPayload": {"typedData": {"fake": True}}}
+    async def fake_initiate(amount_kobo, recipient_code, reason):
+        calls["initiate"] = (amount_kobo, recipient_code, reason)
+        return {"id": 123, "transfer_code": "TRF-1", "status": "pending"}
 
-    def fake_sign(sign_payload):
-        calls["sign"] = sign_payload
-        return "0xsignature"
+    async def fake_status(transfer_code):
+        calls["status"] = transfer_code
+        return {"status": "success"}
 
-    async def fake_submit(user_id, proposal_id, signature):
-        calls["submit"] = (user_id, proposal_id, signature)
-        return {"data": {"proposal": {"id": proposal_id, "status": "EXECUTED"}}}
-
-    monkeypatch.setattr(bmoni_service, "initiate_nigeria_withdrawal", fake_initiate)
-    monkeypatch.setattr(bmoni_service, "sign_withdrawal_payload", fake_sign)
-    monkeypatch.setattr(bmoni_service, "submit_proposal_signature", fake_submit)
+    monkeypatch.setattr(paystack_service, "initiate_transfer", fake_initiate)
+    monkeypatch.setattr(paystack_service, "get_transfer_status", fake_status)
 
     tx = ts.evaluate_intent("onboarded-flow-user", "withdraw", 3000, None, 0.95)
     ts.confirm_transaction(tx.id)
@@ -231,9 +218,9 @@ async def test_withdraw_uses_real_bmoni_chain_when_agent_onboarded(monkeypatch):
     result = await ts.execute_transaction(tx.id)
 
     assert result.state == ts.STATES["TRANSACTION_SUCCESS"]
-    assert result.bmoniReference == "prop-1"
-    assert calls["initiate"] == ("agent-bmoni-1", "agent-wallet-1", "agent-bank-acct-1", "3000.00")
-    assert calls["submit"] == ("agent-bmoni-1", "prop-1", "0xsignature")
+    assert result.paymentReference == "TRF-1"
+    assert calls["initiate"] == (300000, "RCP_agent-1", "ElderPay cash withdrawal")
+    assert calls["status"] == "TRF-1"
     assert store.get_account("onboarded-flow-user").balance == before - 3000
 
 

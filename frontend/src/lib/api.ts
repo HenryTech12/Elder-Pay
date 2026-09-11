@@ -1,5 +1,5 @@
 import type {
-  Action, AccountProfile, AccountRegisterPayload, AgentBmoniProfile, Bank, FaceAuthorizeResult, FaceStatus,
+  Action, AccountProfile, AccountRegisterPayload, AgentPayoutProfile, Bank, FaceAuthorizeResult, FaceStatus,
   HealthStatus, ParsedIntent, Receipt, TransactionRecord, VoiceAuthorizeResult, VoiceStatus
 } from "../types";
 
@@ -193,7 +193,7 @@ export async function getHealth(): Promise<HealthStatus> {
   return asJson(res);
 }
 
-export async function getAgentBmoniStatus(): Promise<AgentBmoniProfile> {
-  const res = await fetch(`${API_BASE}/api/agent/bmoni-status`);
+export async function getAgentPayoutStatus(): Promise<AgentPayoutProfile> {
+  const res = await fetch(`${API_BASE}/api/agent/payout-status`);
   return asJson(res);
 }
