@@ -29,10 +29,12 @@ Adjust LANGUAGES / CLIPS_PER_LANGUAGE below to taste.
 """
 
 import csv
+import io
 import os
 
 import soundfile as sf
-from datasets import load_dataset
+from datasets import Audio, load_dataset
+from huggingface_hub import hf_hub_download
 
 OUTPUT_AUDIO_DIR = "backend/benchmark/clips/afriswitch"
 MANIFEST_PATH = "backend/benchmark/clips/manifest.csv"
@@ -49,6 +51,13 @@ LANG_CODE_MAP = {
     "hausa": "ha",
     "pidgin": "pcm",
     "igbo": "ig",
+}
+
+DATA_SHARDS = {
+    "yoruba": "data/yoruba/test-00002-of-00004.parquet",
+    "hausa": "data/hausa/test-00003-of-00004.parquet",
+    "pidgin": "data/pidgin/test-00003-of-00004.parquet",
+    "igbo": "data/igbo/test-00000-of-00004.parquet",
 }
 
 MANIFEST_HEADERS = [
@@ -71,9 +80,16 @@ def main():
             # streaming=True: only fetches the shards it actually reads from,
             # not the full 6.84GB dataset. Only "test" split exists — this
             # is an eval-only benchmark release, not a training set.
-            ds = load_dataset(
-                "intronhealth/AfriSwitch", lang, split="test", streaming=True
+            shard_path = hf_hub_download(
+                "intronhealth/AfriSwitch",
+                DATA_SHARDS[lang],
+                repo_type="dataset",
+                token=os.environ.get("HF_TOKEN"),
             )
+            ds = load_dataset(
+                "parquet", data_files={"test": shard_path}, split="test", streaming=True
+            )
+            ds = ds.cast_column("audio", Audio(decode=False))
 
             lang_code = LANG_CODE_MAP.get(lang, lang)
             count = 0
@@ -89,7 +105,8 @@ def main():
 
                 filename = f"{lang}_{count:02d}.wav"
                 out_path = os.path.join(OUTPUT_AUDIO_DIR, filename)
-                sf.write(out_path, audio["array"], audio["sampling_rate"])
+                samples, sampling_rate = sf.read(io.BytesIO(audio["bytes"]))
+                sf.write(out_path, samples, sampling_rate)
 
                 writer.writerow([
                     out_path,
