@@ -26,6 +26,29 @@ export function isSoundEnabled(): boolean {
   return soundEnabled;
 }
 
+export async function recordAudio(): Promise<{ stop: () => void; result: Promise<Blob> }> {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const recorder = new MediaRecorder(stream);
+  const chunks: Blob[] = [];
+  const result = new Promise<Blob>((resolve, reject) => {
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) chunks.push(event.data);
+    };
+    recorder.onerror = () => reject(new Error('RECORDING_FAILED'));
+    recorder.onstop = () => {
+      stream.getTracks().forEach((track) => track.stop());
+      resolve(new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }));
+    };
+  });
+  recorder.start();
+  return {
+    stop: () => {
+      if (recorder.state !== 'inactive') recorder.stop();
+    },
+    result,
+  };
+}
+
 export function playChime(type: 'listen' | 'understood' | 'verify' | 'success' | 'click' | 'error') {
   if (!soundEnabled) return;
   try {

@@ -11,11 +11,13 @@ type DemoStep = 'idle' | 'listening' | 'understood' | 'verifying' | 'success';
 interface InteractiveVoiceDemoProps {
   initialLanguage?: Language;
   onViewHistory?: () => void;
+  onOpenFullApp?: () => void;
 }
 
 export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
   initialLanguage = 'yo',
-  onViewHistory
+  onViewHistory,
+  onOpenFullApp
 }) => {
   const [currentLang, setCurrentLang] = useState<Language>(initialLanguage);
   const [step, setStep] = useState<DemoStep>('idle');
@@ -475,9 +477,9 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
                 >
                   Done (New Transaction)
                 </button>
-                {onViewHistory && (
+                {(onViewHistory || onOpenFullApp) && (
                   <button
-                    onClick={onViewHistory}
+                    onClick={onViewHistory || onOpenFullApp}
                     className="retro-btn-secondary py-3 px-4 text-xs font-bold cursor-pointer"
                   >
                     View in Ledger

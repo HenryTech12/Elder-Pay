@@ -40,6 +40,15 @@ export async function voiceProcess(blob: Blob, languageCode?: string): Promise<{
   return asJson(res);
 }
 
+export async function transcribeOnly(blob: Blob, languageCode?: string): Promise<{ text: string }> {
+  const form = new FormData();
+  form.append("audio", blob, "clip.webm");
+  if (languageCode && languageCode !== "pcm") form.append("language", languageCode);
+  form.append("use_domain_prompt", "false");
+  const res = await fetch(`${API_BASE}/api/transcribe`, { method: "POST", body: form });
+  return asJson(res);
+}
+
 export async function confirmCreate(
   userId: string, action: Action, amount: number | null, recipient: string | null, confidence: number | null
 ): Promise<TransactionRecord> {

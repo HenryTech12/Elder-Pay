@@ -81,10 +81,17 @@ async def transcribe(
     audio: UploadFile = File(...),
     language: Optional[str] = Form(None),
     provider: Optional[str] = Form(None),
+    use_domain_prompt: bool = Form(True),
 ):
     try:
         audio_bytes = await audio.read()
-        text = await stt_provider.transcribe(provider or stt_provider.get_default_provider(), audio_bytes, audio.filename, language)
+        text = await stt_provider.transcribe(
+            provider or stt_provider.get_default_provider(),
+            audio_bytes,
+            audio.filename,
+            language,
+            use_domain_prompt=use_domain_prompt,
+        )
         return {"text": text}
     except Exception as err:
         logger.error("transcribe failed: %s", err, exc_info=True)

@@ -1,12 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { 
-  ArrowLeft, ArrowRight, UserCheck, ShieldCheck, Camera, CheckCircle2, 
+  ArrowLeft, ArrowRight, UserCheck, ShieldCheck, Camera, CheckCircle2, Mic,
   Sparkles, Phone, MapPin, Languages, Check 
 } from 'lucide-react';
 import { Language, Customer } from '../types';
-import { LANGUAGES } from '../lib/phrases';
-import { playChime, speakConfirmation } from '../lib/audio';
+import { getOnboardingPhrase, LANGUAGES } from '../lib/phrases';
+import { playChime, recordAudio, speakConfirmation } from '../lib/audio';
+import { transcribeOnly } from '../lib/api';
 import { getStoredCustomers, setActiveCustomerId, formatNaira } from '../lib/store';
 
 interface OnboardingPageProps {
@@ -23,8 +24,11 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
   const [address, setAddress] = useState('');
   const [email, setEmail] = useState('');
 
+  const [recordingField, setRecordingField] = useState<'firstName' | 'lastName' | 'phone' | 'address' | null>(null);
+  const [transcribingField, setTranscribingField] = useState<'firstName' | 'lastName' | 'phone' | 'address' | null>(null);
+
   // Step 2: Preferred Language
-  const [preferredLang, setPreferredLang] = useState<Language>('yo');
+  const [preferredLang, setPreferredLang] = useState<Language>('en');
 
   // Step 3: Face Enrollment
   const [isCapturing, setIsCapturing] = useState(false);
@@ -33,6 +37,74 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
   const [newCustomer, setNewCustomer] = useState<Customer | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const recorderRef = useRef<{ stop: () => void } | null>(null);
+  const inputRefs = useRef<Record<'firstName' | 'lastName' | 'phone' | 'address', HTMLInputElement | null>>({
+    firstName: null,
+    lastName: null,
+    phone: null,
+    address: null,
+  });
+
+  useEffect(() => {
+    if (currentStep === 1) {
+      speakConfirmation(getOnboardingPhrase(preferredLang, 'voiceEntryPrompt'));
+    }
+  }, [currentStep, preferredLang]);
+
+  const setFieldValue = (field: 'firstName' | 'lastName' | 'phone' | 'address', value: string) => {
+    if (field === 'firstName') setFirstName(value);
+    if (field === 'lastName') setLastName(value);
+    if (field === 'phone') setPhone(value);
+    if (field === 'address') setAddress(value);
+  };
+
+  const handleVoiceInput = async (field: 'firstName' | 'lastName' | 'phone' | 'address') => {
+    if (transcribingField || recordingField) {
+      if (recordingField === field) recorderRef.current?.stop();
+      return;
+    }
+
+    playChime('listen');
+    setRecordingField(field);
+    try {
+      const recorder = await recordAudio();
+      recorderRef.current = recorder;
+      const blob = await recorder.result;
+      setRecordingField(null);
+      setTranscribingField(field);
+      const { text } = await transcribeOnly(blob, preferredLang);
+      const transcript = text.trim();
+      if (!transcript) throw new Error('EMPTY_TRANSCRIPT');
+      setFieldValue(field, transcript);
+      inputRefs.current[field]?.focus();
+      playChime('understood');
+      if (field === 'phone') {
+        speakConfirmation(getOnboardingPhrase(preferredLang, 'phoneConfirmation', transcript));
+      }
+    } catch {
+      setRecordingField(null);
+      playChime('error');
+    } finally {
+      recorderRef.current = null;
+      setTranscribingField(null);
+    }
+  };
+
+  const voiceButton = (field: 'firstName' | 'lastName' | 'phone' | 'address') => {
+    const isRecording = recordingField === field;
+    const isTranscribing = transcribingField === field;
+    return (
+      <button
+        type="button"
+        aria-label={isRecording ? `Stop recording ${field}` : `Speak ${field}`}
+        onClick={() => void handleVoiceInput(field)}
+        disabled={Boolean(transcribingField) || (Boolean(recordingField) && !isRecording)}
+        className="shrink-0 min-w-10 h-10 px-2 flex items-center justify-center gap-1 rounded-xl border-2 border-[#0D1B2A] bg-white hover:bg-[#FEF3C7] disabled:opacity-60 cursor-pointer"
+      >
+        {isRecording ? <span className="text-[9px] font-black">Listening...</span> : isTranscribing ? <span className="text-[9px] font-black">Transcribing...</span> : <Mic className="w-4 h-4" />}
+      </button>
+    );
+  };
 
   const handleStep1Next = (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,27 +253,35 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
                   <label className="block text-xs font-bold text-[#0D1B2A] mb-1">
                     First Name *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g., Folashade"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-[#FAF5EC] rounded-xl border-2 border-[#0D1B2A] text-xs font-medium text-[#0D1B2A] focus:outline-none"
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={(element) => { inputRefs.current.firstName = element; }}
+                      type="text"
+                      required
+                      placeholder="e.g., Folashade"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="min-w-0 flex-1 px-4 py-2.5 bg-[#FAF5EC] rounded-xl border-2 border-[#0D1B2A] text-xs font-medium text-[#0D1B2A] focus:outline-none"
+                    />
+                    {voiceButton('firstName')}
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-[#0D1B2A] mb-1">
                     Last Name
                   </label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Adeleke"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-[#FAF5EC] rounded-xl border-2 border-[#0D1B2A] text-xs font-medium text-[#0D1B2A] focus:outline-none"
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={(element) => { inputRefs.current.lastName = element; }}
+                      type="text"
+                      placeholder="e.g., Adeleke"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="min-w-0 flex-1 px-4 py-2.5 bg-[#FAF5EC] rounded-xl border-2 border-[#0D1B2A] text-xs font-medium text-[#0D1B2A] focus:outline-none"
+                    />
+                    {voiceButton('lastName')}
+                  </div>
                 </div>
               </div>
 
@@ -209,27 +289,35 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
                 <label className="block text-xs font-bold text-[#0D1B2A] mb-1">
                   Phone Number (for SMS Receipts) *
                 </label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="0803 XXX XXXX"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[#FAF5EC] rounded-xl border-2 border-[#0D1B2A] text-xs font-medium text-[#0D1B2A] focus:outline-none"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={(element) => { inputRefs.current.phone = element; }}
+                    type="tel"
+                    required
+                    placeholder="0803 XXX XXXX"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="min-w-0 flex-1 px-4 py-2.5 bg-[#FAF5EC] rounded-xl border-2 border-[#0D1B2A] text-xs font-medium text-[#0D1B2A] focus:outline-none"
+                  />
+                  {voiceButton('phone')}
+                </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#0D1B2A] mb-1">
                   Residential / Market Stall Address
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g., 18 Dugbe Market Road, Ibadan"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[#FAF5EC] rounded-xl border-2 border-[#0D1B2A] text-xs font-medium text-[#0D1B2A] focus:outline-none"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={(element) => { inputRefs.current.address = element; }}
+                    type="text"
+                    placeholder="e.g., 18 Dugbe Market Road, Ibadan"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="min-w-0 flex-1 px-4 py-2.5 bg-[#FAF5EC] rounded-xl border-2 border-[#0D1B2A] text-xs font-medium text-[#0D1B2A] focus:outline-none"
+                  />
+                  {voiceButton('address')}
+                </div>
               </div>
 
               <div>
