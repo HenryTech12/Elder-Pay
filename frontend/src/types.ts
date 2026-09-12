@@ -108,6 +108,7 @@ export interface HealthStatus {
   ok: boolean;
   demoMode: boolean;
   paystackConfigured: boolean;
+  yarngptConfigured: boolean;
   dbConnected: boolean;
 }
 
