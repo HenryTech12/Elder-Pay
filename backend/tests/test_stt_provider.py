@@ -27,4 +27,5 @@ async def test_dispatches_to_selected_provider(monkeypatch, provider, service, f
     result = await stt_provider.transcribe(provider, b"audio", "clip.wav", "yo")
 
     assert result == "transcript"
-    mocked.assert_awaited_once_with(b"audio", "clip.wav", "yo")
+    expected_kwargs = {"use_domain_prompt": True} if provider == "groq" else {}
+    mocked.assert_awaited_once_with(b"audio", "clip.wav", "yo", **expected_kwargs)
