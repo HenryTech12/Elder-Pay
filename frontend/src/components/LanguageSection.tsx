@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Volume2, Languages, Sparkles, Check, Info } from 'lucide-react';
 import { Language } from '../types';
-import { LANGUAGES } from '../lib/phrases';
-import { playChime, speakConfirmation, stopSpeaking } from '../lib/audio';
+import { LANGUAGES, speakNative } from '../lib/phrases';
+import { playChime, stopSpeaking } from '../lib/audio';
 
 export const LanguageSection: React.FC = () => {
   const [selectedLang, setSelectedLang] = useState<Language>('yo');
@@ -15,7 +15,7 @@ export const LanguageSection: React.FC = () => {
     stopSpeaking();
     playChime('listen');
     setIsPlayingAudio(true);
-    speakConfirmation(langInfo.samplePhrase, () => setIsPlayingAudio(false));
+    void speakNative(langInfo.samplePhrase, selectedLang, () => setIsPlayingAudio(false));
   };
 
   return (

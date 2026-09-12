@@ -6,8 +6,8 @@ import {
   AlertTriangle, Phone, Building2, CreditCard, ChevronRight, Share2 
 } from 'lucide-react';
 import { Language, Customer, Transaction } from '../types';
-import { LANGUAGES, QUICK_VOICE_COMMANDS } from '../lib/phrases';
-import { playChime, speakConfirmation, stopSpeaking } from '../lib/audio';
+import { LANGUAGES, QUICK_VOICE_COMMANDS, speakNative } from '../lib/phrases';
+import { playChime, stopSpeaking } from '../lib/audio';
 import { getStoredCustomers, getActiveCustomer, setActiveCustomerId, recordTransaction, formatNaira, resetDemoState } from '../lib/store';
 
 type PosStep = 'customer' | 'ready' | 'listening' | 'understood' | 'verifying' | 'success';
@@ -104,7 +104,7 @@ export const VirtualPosApp: React.FC<VirtualPosAppProps> = ({ onNavigate }) => {
           playChime('understood');
           setStep('understood');
           setIsSpeaking(true);
-          speakConfirmation(langInfo.confirmationText, () => setIsSpeaking(false));
+          void speakNative(langInfo.confirmationText, selectedLang, () => setIsSpeaking(false));
         }, 500);
       }
     }, 40);
@@ -142,7 +142,7 @@ export const VirtualPosApp: React.FC<VirtualPosAppProps> = ({ onNavigate }) => {
           setBalance(prev => Math.max(0, prev - 10000));
           setStep('success');
           playChime('success');
-          speakConfirmation(langInfo.successText);
+          void speakNative(langInfo.successText, selectedLang);
         }, 350);
       }
     }, 120);
@@ -470,7 +470,7 @@ export const VirtualPosApp: React.FC<VirtualPosAppProps> = ({ onNavigate }) => {
                     onClick={() => {
                       playChime('click');
                       setIsSpeaking(true);
-                      speakConfirmation(langInfo.confirmationText, () => setIsSpeaking(false));
+                      void speakNative(langInfo.confirmationText, selectedLang, () => setIsSpeaking(false));
                     }}
                     className="retro-btn-secondary py-3 px-4 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >

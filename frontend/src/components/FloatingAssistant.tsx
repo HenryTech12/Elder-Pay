@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageSquare, Mic, Volume2, X, Sparkles, ArrowRight } from 'lucide-react';
-import { playChime, speakConfirmation } from '../lib/audio';
+import { playChime } from '../lib/audio';
+import { speakNative } from '../lib/phrases';
 
 interface FloatingAssistantProps {
   onLaunchDemo: () => void;
@@ -12,16 +13,16 @@ export const FloatingAssistant: React.FC<FloatingAssistantProps> = ({ onLaunchDe
   const [speaking, setSpeaking] = useState(false);
 
   const samplePhrases = [
-    { lang: 'Yorùbá', text: 'Mo fẹ́ fi ẹgbàárùn-ún náírà ránṣẹ́ sí Adéwálé' },
-    { lang: 'Hausa', text: 'Ina son tura naira dubu biyar ga Aminu' },
-    { lang: 'Igbo', text: 'Achọrọ m izipu puku naira iri nye Ngozi' },
-    { lang: 'Pidgin', text: 'I wan send five thousand naira give my mama' }
+    { lang: 'Yorùbá', code: 'yo' as const, text: 'Mo fẹ́ fi ẹgbàárùn-ún náírà ránṣẹ́ sí Adéwálé' },
+    { lang: 'Hausa', code: 'ha' as const, text: 'Ina son tura naira dubu biyar ga Aminu' },
+    { lang: 'Igbo', code: 'ig' as const, text: 'Achọrọ m izipu puku naira iri nye Ngozi' },
+    { lang: 'Pidgin', code: 'pcm' as const, text: 'I wan send five thousand naira give my mama' }
   ];
 
-  const handleSpeak = (text: string) => {
+  const handleSpeak = (text: string, language: 'yo' | 'ha' | 'ig' | 'pcm') => {
     playChime('click');
     setSpeaking(true);
-    speakConfirmation(text, () => {
+    void speakNative(text, language, () => {
       setSpeaking(false);
     });
   };
@@ -63,7 +64,7 @@ export const FloatingAssistant: React.FC<FloatingAssistantProps> = ({ onLaunchDe
               {samplePhrases.map((phrase) => (
                 <button
                   key={phrase.lang}
-                  onClick={() => handleSpeak(phrase.text)}
+                  onClick={() => handleSpeak(phrase.text, phrase.code)}
                   className="w-full text-left p-2.5 rounded-xl bg-white border-2 border-[#0D1B2A] shadow-[2px_2px_0px_#0D1B2A] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#0D1B2A] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer flex items-start justify-between gap-2"
                 >
                   <div>

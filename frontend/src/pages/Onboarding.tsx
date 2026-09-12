@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerAccount, registerFace } from "../lib/api";
 import { captureFaceDescriptor, loadFaceModels } from "../lib/faceAuth";
-import { phrase, speak, prefetchSpeech, LANGUAGES } from "../lib/phrases";
+import { phrase, speakNative, prefetchSpeech, LANGUAGES } from "../lib/phrases";
 import DeviceFrame from "../components/DeviceFrame";
 import SpeakingIndicator from "../components/SpeakingIndicator";
 import { useIsSpeaking } from "../lib/useIsSpeaking";
@@ -37,14 +37,14 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (step === "name") {
-      speak(phrase(lang, "askFullName"), lang);
+      speakNative(phrase(lang, "askFullName"), lang);
       prefetchSpeech(phrase(lang, "askEmail"), lang); // next step, fetched one step ahead
     }
     if (step === "email") {
-      speak(phrase(lang, "askEmail"), lang);
+      speakNative(phrase(lang, "askEmail"), lang);
       prefetchSpeech(phrase(lang, "askAddress"), lang);
     }
-    if (step === "address") speak(phrase(lang, "askAddress"), lang);
+    if (step === "address") speakNative(phrase(lang, "askAddress"), lang);
   }, [step]);
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function Onboarding() {
       const account = await registerAccount({ userId, fullName, address, email, language: lang });
       setCardNumber(account.cardNumber || "");
       if (faceDescriptor) await registerFace(userId, faceDescriptor);
-      await speak(phrase(lang, "enrollmentComplete"), lang);
+      await speakNative(phrase(lang, "enrollmentComplete"), lang);
       setStatus("");
       setStep("done");
     } catch (err) {

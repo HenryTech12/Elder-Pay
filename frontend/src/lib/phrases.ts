@@ -133,6 +133,9 @@ export function phrase(language: Language, key: PhraseKey, ...values: (string | 
 }
 
 let speaking = false;
+let activeAudio: HTMLAudioElement | null = null;
+let resolveActiveAudio: (() => void) | null = null;
+let speechRequest = 0;
 const speakingListeners = new Set<(value: boolean) => void>();
 
 function setSpeaking(value: boolean) {
@@ -146,15 +149,26 @@ export function subscribeSpeaking(listener: (value: boolean) => void): () => voi
   return () => speakingListeners.delete(listener);
 }
 
-export async function speak(text: string, language: Language): Promise<void> {
+export async function speakNative(text: string, language: Language, onEnd?: () => void): Promise<void> {
+  stopNativeSpeaking();
+  const requestId = ++speechRequest;
   setSpeaking(true);
   try {
     const blob = await synthesizeSpeech(text, language);
-    const audio = new Audio(URL.createObjectURL(blob));
+    const objectUrl = URL.createObjectURL(blob);
+    const audio = new Audio(objectUrl);
     await new Promise<void>((resolve) => {
-      audio.onended = () => resolve();
-      audio.onerror = () => resolve();
-      void audio.play().catch(() => resolve());
+      const finish = () => {
+        URL.revokeObjectURL(objectUrl);
+        if (activeAudio === audio) activeAudio = null;
+        if (resolveActiveAudio === finish) resolveActiveAudio = null;
+        resolve();
+      };
+      activeAudio = audio;
+      resolveActiveAudio = finish;
+      audio.onended = finish;
+      audio.onerror = finish;
+      void audio.play().catch(finish);
     });
   } catch {
     await new Promise<void>((resolve) => {
@@ -162,8 +176,21 @@ export async function speak(text: string, language: Language): Promise<void> {
       if (!completed) resolve();
     });
   } finally {
-    setSpeaking(false);
+    if (requestId === speechRequest) setSpeaking(false);
+    onEnd?.();
   }
+}
+
+export function stopNativeSpeaking(): void {
+  speechRequest += 1;
+  resolveActiveAudio?.();
+  resolveActiveAudio = null;
+  activeAudio?.pause();
+  activeAudio = null;
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  setSpeaking(false);
 }
 
 function speakConfirmationFallback(text: string, onEnd: () => void): boolean {

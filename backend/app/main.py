@@ -36,6 +36,7 @@ def health():
         "ok": True,
         "demoMode": True,
         "paystackConfigured": bool(paystack_service.PAYSTACK_SECRET_KEY),
+        "yarngptConfigured": bool(yarngpt_service.YARNGPT_API_KEY),
         "dbConnected": db.is_ready(),
     }
 

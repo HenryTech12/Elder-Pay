@@ -1,4 +1,6 @@
-// Audio feedback engine using Web Audio API and Web Speech API
+// Audio feedback engine using Web Audio API and the native speech fallback.
+
+import { stopNativeSpeaking } from './phrases';
 
 let audioCtx: AudioContext | null = null;
 
@@ -140,44 +142,6 @@ export function playChime(type: 'listen' | 'understood' | 'verify' | 'success' |
   }
 }
 
-export function speakConfirmation(text: string, onEnd?: () => void): boolean {
-  if (!soundEnabled) {
-    if (onEnd) setTimeout(onEnd, 300);
-    return false;
-  }
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    if (onEnd) setTimeout(onEnd, 2000);
-    return false;
-  }
-
-  try {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95; // slightly deliberate for elder clarity
-    utterance.pitch = 1.0;
-
-    // Pick a natural english or local voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => v.lang.includes('en-NG') || v.lang.includes('en-GB') || v.lang.includes('en'));
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-    }
-
-    if (onEnd) {
-      utterance.onend = () => onEnd();
-      utterance.onerror = () => onEnd();
-    }
-
-    window.speechSynthesis.speak(utterance);
-    return true;
-  } catch {
-    if (onEnd) setTimeout(onEnd, 1500);
-    return false;
-  }
-}
-
 export function stopSpeaking() {
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-  }
+  stopNativeSpeaking();
 }

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mic, Volume2, ShieldCheck, CheckCircle2, RotateCcw, ArrowRight, UserCheck, XCircle, Sparkles, RefreshCw, Printer, Check } from 'lucide-react';
 import { Language } from '../types';
-import { LANGUAGES } from '../lib/phrases';
-import { playChime, speakConfirmation, stopSpeaking } from '../lib/audio';
+import { LANGUAGES, speakNative } from '../lib/phrases';
+import { playChime, stopSpeaking } from '../lib/audio';
 import { getActiveCustomer, recordTransaction, formatNaira } from '../lib/store';
 
 type DemoStep = 'idle' | 'listening' | 'understood' | 'verifying' | 'success';
@@ -52,7 +52,7 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
         setTimeout(() => {
           playChime('understood');
           setStep('understood');
-          speakConfirmation(langData.confirmationText, () => setIsSpeakingReadback(false));
+          void speakNative(langData.confirmationText, currentLang, () => setIsSpeakingReadback(false));
           setIsSpeakingReadback(true);
         }, 600);
       }
@@ -92,7 +92,7 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
           setBalance(prev => Math.max(0, prev - 10000));
           playChime('success');
           setStep('success');
-          speakConfirmation(langData.successText);
+          void speakNative(langData.successText, currentLang);
         }, 500);
       }
     }, 180);
@@ -101,7 +101,7 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
   const handleRepeatReadback = () => {
     playChime('click');
     setIsSpeakingReadback(true);
-    speakConfirmation(langData.confirmationText, () => setIsSpeakingReadback(false));
+    void speakNative(langData.confirmationText, currentLang, () => setIsSpeakingReadback(false));
   };
 
   const handleCancel = () => {

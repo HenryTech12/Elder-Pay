@@ -5,8 +5,8 @@ import {
   Sparkles, Phone, MapPin, Languages, Check 
 } from 'lucide-react';
 import { Language, Customer } from '../types';
-import { getOnboardingPhrase, LANGUAGES } from '../lib/phrases';
-import { playChime, recordAudio, speakConfirmation } from '../lib/audio';
+import { getOnboardingPhrase, LANGUAGES, speakNative } from '../lib/phrases';
+import { playChime, recordAudio } from '../lib/audio';
 import { transcribeOnly } from '../lib/api';
 import { getStoredCustomers, setActiveCustomerId, formatNaira } from '../lib/store';
 
@@ -47,7 +47,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
 
   useEffect(() => {
     if (currentStep === 1) {
-      speakConfirmation(getOnboardingPhrase(preferredLang, 'voiceEntryPrompt'));
+      void speakNative(getOnboardingPhrase(preferredLang, 'voiceEntryPrompt'), preferredLang);
     }
   }, [currentStep, preferredLang]);
 
@@ -79,11 +79,11 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
       inputRefs.current[field]?.focus();
       playChime('understood');
       if (field === 'phone') {
-        speakConfirmation(getOnboardingPhrase(preferredLang, 'phoneConfirmation', transcript));
+        void speakNative(getOnboardingPhrase(preferredLang, 'phoneConfirmation', transcript), preferredLang);
       }
     } catch {
       setRecordingField(null);
-      speakConfirmation(getOnboardingPhrase(preferredLang, 'voiceRetryPrompt'));
+      void speakNative(getOnboardingPhrase(preferredLang, 'voiceRetryPrompt'), preferredLang);
       playChime('error');
     } finally {
       recorderRef.current = null;
@@ -184,7 +184,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
 
         setTimeout(() => {
           setCurrentStep(4);
-          speakConfirmation(`Welcome to ElderPay, ${firstName}! Your voice account has been created.`);
+          void speakNative(`Welcome to ElderPay, ${firstName}! Your voice account has been created.`, preferredLang);
         }, 500);
       }
     }, 200);
