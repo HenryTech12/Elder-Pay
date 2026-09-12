@@ -64,28 +64,33 @@ export const LANGUAGES: Record<Language, LanguageInfo> = {
   }
 };
 
-type OnboardingPhraseKey = 'voiceEntryPrompt' | 'phoneConfirmation';
+type OnboardingPhraseKey = 'voiceEntryPrompt' | 'phoneConfirmation' | 'voiceRetryPrompt';
 
 const ONBOARDING_PHRASES: Record<Language, Record<OnboardingPhraseKey, string>> = {
   en: {
     voiceEntryPrompt: 'Tap the microphone next to each box to speak your answer, or type it in.',
-    phoneConfirmation: "I heard {phone}. If that's wrong, please correct it or try again."
+    phoneConfirmation: "I heard {phone}. If that's wrong, please correct it or try again.",
+    voiceRetryPrompt: "I couldn't hear that clearly. Please try again or type your answer."
   },
   yo: {
     voiceEntryPrompt: 'Tẹ aami gbohungbohun lẹ́gbẹ̀ẹ́ àpótí kọ̀ọ̀kan láti sọ ìdáhùn rẹ, tàbí tẹ̀ ẹ́ sínú rẹ̀.',
-    phoneConfirmation: 'Mo gbọ́ {phone}. Tí kò bá tọ̀nà, jọ̀wọ́ ṣe àtúnṣe rẹ̀ tàbí tún gbìyànjú.'
+    phoneConfirmation: 'Mo gbọ́ {phone}. Tí kò bá tọ̀nà, jọ̀wọ́ ṣe àtúnṣe rẹ̀ tàbí tún gbìyànjú.',
+    voiceRetryPrompt: 'Mi ò gbọ́ dáadáa. Jọ̀wọ́ tún gbìyànjú tàbí tẹ ìdáhùn rẹ sínú rẹ̀.'
   },
   pcm: {
     voiceEntryPrompt: 'Tap the microphone near each box to talk your answer, or type am inside.',
-    phoneConfirmation: 'I hear {phone}. If e no correct, abeg correct am or try again.'
+    phoneConfirmation: 'I hear {phone}. If e no correct, abeg correct am or try again.',
+    voiceRetryPrompt: 'I no hear that well. Abeg try again or type your answer.'
   },
   ha: {
     voiceEntryPrompt: 'Ta makirufo kusa da kowane akwati don faɗin amsarka, ko ka rubuta ta.',
-    phoneConfirmation: 'Na ji {phone}. Idan ba daidai ba ne, don Allah ka gyara shi ko ka sake gwadawa.'
+    phoneConfirmation: 'Na ji {phone}. Idan ba daidai ba ne, don Allah ka gyara shi ko ka sake gwadawa.',
+    voiceRetryPrompt: 'Ban ji hakan da kyau ba. Don Allah ka sake gwadawa ko ka rubuta amsarka.'
   },
   ig: {
     voiceEntryPrompt: 'Pịa igwe okwu dị n’akụkụ igbe ọ bụla iji kwuo azịza gị, ma ọ bụ pịnye ya.',
-    phoneConfirmation: 'Anụla m {phone}. Ọ bụrụ na ọ bụghị eziokwu, biko mezie ya ma ọ bụ nwaa ọzọ.'
+    phoneConfirmation: 'Anụla m {phone}. Ọ bụrụ na ọ bụghị eziokwu, biko mezie ya ma ọ bụ nwaa ọzọ.',
+    voiceRetryPrompt: 'Anụghị m nke ọma. Biko nwaa ọzọ ma ọ bụ pịnye azịza gị.'
   }
 };
 

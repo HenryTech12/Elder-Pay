@@ -72,9 +72,9 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
       const blob = await recorder.result;
       setRecordingField(null);
       setTranscribingField(field);
-      const { text } = await transcribeOnly(blob, preferredLang);
+      const { text, likely_unclear } = await transcribeOnly(blob, preferredLang);
       const transcript = text.trim();
-      if (!transcript) throw new Error('EMPTY_TRANSCRIPT');
+      if (!transcript || likely_unclear) throw new Error('UNCLEAR_TRANSCRIPT');
       setFieldValue(field, transcript);
       inputRefs.current[field]?.focus();
       playChime('understood');
@@ -83,6 +83,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
       }
     } catch {
       setRecordingField(null);
+      speakConfirmation(getOnboardingPhrase(preferredLang, 'voiceRetryPrompt'));
       playChime('error');
     } finally {
       recorderRef.current = null;

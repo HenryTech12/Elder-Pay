@@ -203,7 +203,8 @@ export default function App() {
     rec.result.then(async (blob) => {
       setIsRecording(false);
       try {
-        const { text } = await voiceProcess(blob, LANGUAGES[langIdx].code);
+        const { text, likely_unclear } = await voiceProcess(blob, LANGUAGES[langIdx].code);
+        if (likely_unclear || !text.trim()) throw new Error("UNCLEAR_TRANSCRIPT");
         setLoginQuery(text);
       } catch {
         setLoginError("Couldn't hear that clearly — try typing instead.");
@@ -293,7 +294,13 @@ export default function App() {
         setIsRecording(false);
         try {
           const langCode = LANGUAGES[langIdx].code;
-          const { text, intent } = await voiceProcess(blob, langCode);
+          const { text, intent, likely_unclear } = await voiceProcess(blob, langCode);
+          if (likely_unclear || !text.trim() || !intent) {
+            await speak(phrase(langCode, "notUnderstood"), langCode);
+            setErrorCode("NETWORK_ERROR");
+            setStep("error");
+            return;
+          }
           setTranscript(text);
           await handleIntent(intent);
         } catch {

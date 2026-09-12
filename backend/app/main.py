@@ -68,9 +68,13 @@ async def voice_process(
 ):
     try:
         audio_bytes = await audio.read()
-        text = await stt_provider.transcribe(provider or stt_provider.get_default_provider(), audio_bytes, audio.filename, language)
+        text, likely_unclear = await stt_provider.transcribe_with_quality(
+            provider or stt_provider.get_default_provider(), audio_bytes, audio.filename, language
+        )
+        if likely_unclear:
+            return {"text": text, "likely_unclear": True, "intent": None}
         intent = await groq_service.parse_intent(text)
-        return {"text": text, "intent": intent.model_dump()}
+        return {"text": text, "likely_unclear": False, "intent": intent.model_dump()}
     except Exception as err:
         logger.error("voice_process failed: %s", err, exc_info=True)
         raise HTTPException(status_code=500, detail={"error": "NETWORK_ERROR", "message": str(err)})
@@ -85,14 +89,14 @@ async def transcribe(
 ):
     try:
         audio_bytes = await audio.read()
-        text = await stt_provider.transcribe(
+        text, likely_unclear = await stt_provider.transcribe_with_quality(
             provider or stt_provider.get_default_provider(),
             audio_bytes,
             audio.filename,
             language,
             use_domain_prompt=use_domain_prompt,
         )
-        return {"text": text}
+        return {"text": text, "likely_unclear": likely_unclear}
     except Exception as err:
         logger.error("transcribe failed: %s", err, exc_info=True)
         raise HTTPException(status_code=500, detail={"error": "NETWORK_ERROR", "message": str(err)})

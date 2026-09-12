@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Optional
 
 from app.services import groq_service, local_whisper_service, sahara_service
+from app.services.transcript_quality import is_likely_hallucinated
 
 
 class STTProvider(str, Enum):
@@ -41,3 +42,20 @@ async def transcribe(
     if selected_provider is STTProvider.SAHARA:
         return await sahara_service.transcribe_audio(audio_bytes, filename, language_hint)
     return await local_whisper_service.transcribe_audio(audio_bytes, filename, language_hint)
+
+
+async def transcribe_with_quality(
+    provider: str,
+    audio_bytes: bytes,
+    filename: str,
+    language_hint: Optional[str] = None,
+    use_domain_prompt: bool = True,
+) -> tuple[str, bool]:
+    transcript = await transcribe(
+        provider,
+        audio_bytes,
+        filename,
+        language_hint,
+        use_domain_prompt=use_domain_prompt,
+    )
+    return transcript, not transcript.strip() or is_likely_hallucinated(transcript, language_hint)

@@ -32,7 +32,7 @@ export async function synthesizeSpeech(text: string, language: string): Promise<
   return res.blob();
 }
 
-export async function voiceProcess(blob: Blob, languageCode?: string): Promise<{ text: string; intent: ParsedIntent }> {
+export async function voiceProcess(blob: Blob, languageCode?: string): Promise<{ text: string; intent: ParsedIntent | null; likely_unclear: boolean }> {
   const form = new FormData();
   form.append("audio", blob, "clip.webm");
   if (languageCode && languageCode !== "pcm") form.append("language", languageCode);
@@ -40,7 +40,7 @@ export async function voiceProcess(blob: Blob, languageCode?: string): Promise<{
   return asJson(res);
 }
 
-export async function transcribeOnly(blob: Blob, languageCode?: string): Promise<{ text: string }> {
+export async function transcribeOnly(blob: Blob, languageCode?: string): Promise<{ text: string; likely_unclear: boolean }> {
   const form = new FormData();
   form.append("audio", blob, "clip.webm");
   if (languageCode && languageCode !== "pcm") form.append("language", languageCode);
