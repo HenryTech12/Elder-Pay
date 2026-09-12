@@ -56,7 +56,10 @@ def resolve_audio_path(manifest_path: str, audio_path: str) -> str:
     path = Path(audio_path)
     if path.is_absolute():
         return str(path)
-    return str((Path(manifest_path).parent / path).resolve())
+    manifest_dir = Path(manifest_path).parent
+    if path.parts and path.parts[0] == manifest_dir.name:
+        return str((manifest_dir.parent / path).resolve())
+    return str((manifest_dir / path).resolve())
 
 
 def _required(row: dict[str, str], key: str) -> str:

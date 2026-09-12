@@ -14,14 +14,18 @@ import logging
 import re
 import sys
 from collections import defaultdict
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
+
+from dotenv import load_dotenv
 
 # app/ is a top-level package when the backend is run from its own directory.
 # Add that directory for the documented repository-root module invocation.
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
+load_dotenv(BACKEND_DIR / ".env")
 
 from jiwer import cer, wer
 
@@ -107,13 +111,24 @@ async def _intent_scores(actual: str, expected: dict[str, Any]) -> dict[str, Any
     try:
         parsed = await groq_service.parse_intent(actual)
         return {
-            "intent_action_exact": int(parsed.action == expected.get("action")),
-            "intent_amount_exact": int(parsed.amount == expected.get("amount")),
-            "intent_recipient_exact": int(parsed.recipient == expected.get("recipient")),
+            "intent_action_exact": int(_intent_value_equal(parsed.action, expected.get("action"), "action")),
+            "intent_amount_exact": int(_intent_value_equal(parsed.amount, expected.get("amount"), "amount")),
+            "intent_recipient_exact": int(_intent_value_equal(parsed.recipient, expected.get("recipient"), "recipient")),
         }
     except Exception as error:
         logger.exception("intent parsing failed")
         return {"intent_action_exact": 0, "intent_amount_exact": 0, "intent_recipient_exact": 0, "intent_error": str(error)}
+
+
+def _intent_value_equal(actual: Any, expected: Any, field: str) -> bool:
+    if actual is None or expected is None:
+        return actual is expected
+    if field == "amount":
+        try:
+            return Decimal(str(actual).strip()) == Decimal(str(expected).strip())
+        except (InvalidOperation, ValueError):
+            return False
+    return str(actual).strip().casefold() == str(expected).strip().casefold()
 
 
 def _empty_intent_scores() -> dict[str, Any]:
@@ -164,7 +179,19 @@ def write_report(rows: list[dict[str, Any]], output_path: Path) -> None:
                 cells.append(f"{_average(values, 'wer_normalized'):.3f} / {_average(values, 'cer_normalized'):.3f}")
         lines.append(_table_row(cells))
 
-    lines += ["", "## Intent exact-match accuracy", "", _table_header(languages, "Action / Amount / Recipient")]
+    fintech_intent_clips = {
+        row["audio_path"]
+        for row in rows
+        if row["domain"] == "fintech" and row["intent_action_exact"] != ""
+    }
+    lines += [
+        "",
+        "## Intent exact-match accuracy",
+        "",
+        f"Intent scores are evaluated on a small set of {len(fintech_intent_clips)} real fintech utterances with expected intents.",
+        "",
+        _table_header(languages, "Action / Amount / Recipient"),
+    ]
     for language in languages:
         cells = [language]
         for provider in PROVIDERS:
