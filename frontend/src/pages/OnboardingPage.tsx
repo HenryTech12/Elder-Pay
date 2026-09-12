@@ -47,6 +47,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
 
   useEffect(() => {
     if (currentStep === 1) {
+      console.log('[OnboardingPage] triggering speech:', getOnboardingPhrase(preferredLang, 'voiceEntryPrompt'));
       void speakNative(getOnboardingPhrase(preferredLang, 'voiceEntryPrompt'), preferredLang);
     }
   }, [currentStep, preferredLang]);

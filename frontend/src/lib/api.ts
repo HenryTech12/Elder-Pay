@@ -22,14 +22,17 @@ async function asJson<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function synthesizeSpeech(text: string, language: string): Promise<Blob> {
-  const res = await fetch(`${API_BASE}/api/tts`, {
+export async function synthesizeSpeech(text: string, language: string): Promise<{ blob: Blob; url: string; status: number }> {
+  const url = `${API_BASE}/api/tts`;
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, language })
   });
-  if (!res.ok) throw new Error("TTS_UNAVAILABLE");
-  return res.blob();
+  if (!res.ok) {
+    throw Object.assign(new Error("TTS_UNAVAILABLE"), { status: res.status, url });
+  }
+  return { blob: await res.blob(), url, status: res.status };
 }
 
 export async function voiceProcess(blob: Blob, languageCode?: string): Promise<{ text: string; intent: ParsedIntent | null; likely_unclear: boolean }> {

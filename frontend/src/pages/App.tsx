@@ -235,7 +235,9 @@ export default function App() {
 
     if (resolved.state === "CONFIRMATION_REQUIRED") {
       const lang = LANGUAGES[langIdx].code;
-      await speakNative(confirmPhraseFor(lang, resolved.action, resolved.amount, resolved.recipient), lang);
+      const confirmationText = confirmPhraseFor(lang, resolved.action, resolved.amount, resolved.recipient);
+      console.log('[App] triggering speech:', confirmationText);
+      await speakNative(confirmationText, lang);
       setStep("confirm");
       return;
     }

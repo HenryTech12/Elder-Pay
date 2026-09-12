@@ -104,6 +104,7 @@ export const VirtualPosApp: React.FC<VirtualPosAppProps> = ({ onNavigate }) => {
           playChime('understood');
           setStep('understood');
           setIsSpeaking(true);
+          console.log('[VirtualPosApp] triggering speech:', langInfo.confirmationText);
           void speakNative(langInfo.confirmationText, selectedLang, () => setIsSpeaking(false));
         }, 500);
       }

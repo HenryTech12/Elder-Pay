@@ -15,6 +15,7 @@ export const LanguageSection: React.FC = () => {
     stopSpeaking();
     playChime('listen');
     setIsPlayingAudio(true);
+    console.log('[LanguageSection] triggering speech:', langInfo.samplePhrase);
     void speakNative(langInfo.samplePhrase, selectedLang, () => setIsPlayingAudio(false));
   };
 

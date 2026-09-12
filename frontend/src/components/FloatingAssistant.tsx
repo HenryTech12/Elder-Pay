@@ -22,6 +22,7 @@ export const FloatingAssistant: React.FC<FloatingAssistantProps> = ({ onLaunchDe
   const handleSpeak = (text: string, language: 'yo' | 'ha' | 'ig' | 'pcm') => {
     playChime('click');
     setSpeaking(true);
+    console.log('[FloatingAssistant] triggering speech:', text);
     void speakNative(text, language, () => {
       setSpeaking(false);
     });

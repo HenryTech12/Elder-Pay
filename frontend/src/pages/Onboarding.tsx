@@ -37,6 +37,7 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (step === "name") {
+      console.log('[Onboarding] triggering speech:', phrase(lang, "askFullName"));
       speakNative(phrase(lang, "askFullName"), lang);
       prefetchSpeech(phrase(lang, "askEmail"), lang); // next step, fetched one step ahead
     }

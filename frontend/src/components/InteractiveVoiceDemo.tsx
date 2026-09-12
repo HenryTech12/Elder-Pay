@@ -52,6 +52,7 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
         setTimeout(() => {
           playChime('understood');
           setStep('understood');
+          console.log('[InteractiveVoiceDemo] triggering speech:', langData.confirmationText);
           void speakNative(langData.confirmationText, currentLang, () => setIsSpeakingReadback(false));
           setIsSpeakingReadback(true);
         }, 600);

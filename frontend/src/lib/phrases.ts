@@ -1,5 +1,5 @@
 import { Language, LanguageInfo } from '../types';
-import { synthesizeSpeech } from './api';
+import { API_BASE, synthesizeSpeech } from './api';
 
 export const LANGUAGES: Record<Language, LanguageInfo> = {
   yo: {
@@ -150,11 +150,16 @@ export function subscribeSpeaking(listener: (value: boolean) => void): () => voi
 }
 
 export async function speakNative(text: string, language: Language, onEnd?: () => void): Promise<void> {
+  const speechUrl = `${API_BASE}/api/tts`;
+  console.log('[speakNative] entry:', { text, language });
+  console.log('[speakNative] fetching URL:', speechUrl);
   stopNativeSpeaking();
   const requestId = ++speechRequest;
   setSpeaking(true);
   try {
-    const blob = await synthesizeSpeech(text, language);
+    const response = await synthesizeSpeech(text, language);
+    console.log('[speakNative] fetch succeeded:', { url: response.url, status: response.status });
+    const blob = response.blob;
     const objectUrl = URL.createObjectURL(blob);
     const audio = new Audio(objectUrl);
     await new Promise<void>((resolve) => {
@@ -170,7 +175,15 @@ export async function speakNative(text: string, language: Language, onEnd?: () =
       audio.onerror = finish;
       void audio.play().catch(finish);
     });
-  } catch {
+    console.log('[speakNative] branch: real YarnGPT audio played');
+  } catch (error) {
+    const responseError = error as { status?: number; url?: string };
+    console.log('[speakNative] fetch failed:', {
+      url: responseError.url || speechUrl,
+      status: responseError.status,
+      error
+    });
+    console.log('[speakNative] branch: browser-voice fallback triggered:', error);
     await new Promise<void>((resolve) => {
       const completed = speakConfirmationFallback(text, resolve);
       if (!completed) resolve();
