@@ -259,14 +259,19 @@ export default function App() {
       const lang = LANGUAGES[langIdx].code;
       try {
         const account = await getAccount(userId);
-        await speakNative(phrase(lang, "welcomeBack", account.name), lang);
+        const welcomeText = phrase(lang, "welcomeBack", account.name);
+        console.log('[App] triggering speech:', welcomeText);
+        await speakNative(welcomeText, lang);
       } catch {
         /* welcome message is a nicety — proceed either way */
       }
       setStep("listen");
       return;
     }
-    await speakNative(phrase(LANGUAGES[langIdx].code, "faceAuthFailed"), LANGUAGES[langIdx].code);
+    const failedAuthLang = LANGUAGES[langIdx].code;
+    const failedAuthText = phrase(failedAuthLang, "faceAuthFailed");
+    console.log('[App] triggering speech:', failedAuthText);
+    await speakNative(failedAuthText, failedAuthLang);
     setStep("authFailed");
   }
 
@@ -298,7 +303,9 @@ export default function App() {
           const langCode = LANGUAGES[langIdx].code;
           const { text, intent, likely_unclear } = await voiceProcess(blob, langCode);
           if (likely_unclear || !text.trim() || !intent) {
-            await speakNative(phrase(langCode, "notUnderstood"), langCode);
+            const notUnderstoodText = phrase(langCode, "notUnderstood");
+            console.log('[App] triggering speech:', notUnderstoodText);
+            await speakNative(notUnderstoodText, langCode);
             setErrorCode("NETWORK_ERROR");
             setStep("error");
             return;
@@ -329,7 +336,9 @@ export default function App() {
   async function handleIntent(intent: { action: Action; amount: number | null; recipient: string | null; confidence: number }) {
     if (intent.action === "balance") {
       const b = await getBalance(userId);
-      await speakNative(phrase(LANGUAGES[langIdx].code, "balance", b.balance), LANGUAGES[langIdx].code);
+      const balanceText = phrase(LANGUAGES[langIdx].code, "balance", b.balance);
+      console.log('[App] triggering speech:', balanceText);
+      await speakNative(balanceText, LANGUAGES[langIdx].code);
       setBalance(b.balance);
       setStep("balance");
       return;
@@ -349,7 +358,9 @@ export default function App() {
     }
     if (created.state === "CONFIRMATION_REQUIRED") {
       const lang = LANGUAGES[langIdx].code;
-      await speakNative(confirmPhraseFor(lang, created.action, created.amount, created.recipient), lang);
+      const confirmationText = confirmPhraseFor(lang, created.action, created.amount, created.recipient);
+      console.log('[App] triggering speech:', confirmationText);
+      await speakNative(confirmationText, lang);
       setStep("confirm");
       return;
     }
@@ -376,7 +387,9 @@ export default function App() {
     const r = await getReceipt(sent.id);
     setReceipt(r);
     const lang = LANGUAGES[langIdx].code;
-    await speakNative(successPhraseFor(lang, sent.action, sent.amount, sent.recipient), lang);
+    const successText = successPhraseFor(lang, sent.action, sent.amount, sent.recipient);
+    console.log('[App] triggering speech:', successText);
+    await speakNative(successText, lang);
     setStep("receipt");
   }
 
@@ -561,7 +574,11 @@ export default function App() {
               <span
                 className="clickable"
                 style={s.linkText}
-                onClick={() => speakNative(confirmPhraseFor(LANGUAGES[langIdx].code, tx.action, tx.amount, tx.recipient), LANGUAGES[langIdx].code)}
+                onClick={() => {
+                  const confirmationText = confirmPhraseFor(LANGUAGES[langIdx].code, tx.action, tx.amount, tx.recipient);
+                  console.log('[App] triggering speech:', confirmationText);
+                  void speakNative(confirmationText, LANGUAGES[langIdx].code);
+                }}
               >🔊 Repeat prompt</span>
               <div style={s.actionRow}>
                 <button style={{ ...s.btn, ...s.btnGhost }} onClick={onCancel}>No, cancel</button>

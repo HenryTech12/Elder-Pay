@@ -93,6 +93,7 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
           setBalance(prev => Math.max(0, prev - 10000));
           playChime('success');
           setStep('success');
+          console.log('[InteractiveVoiceDemo] triggering speech:', langData.successText);
           void speakNative(langData.successText, currentLang);
         }, 500);
       }
@@ -102,6 +103,7 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
   const handleRepeatReadback = () => {
     playChime('click');
     setIsSpeakingReadback(true);
+    console.log('[InteractiveVoiceDemo] triggering speech:', langData.confirmationText);
     void speakNative(langData.confirmationText, currentLang, () => setIsSpeakingReadback(false));
   };
 

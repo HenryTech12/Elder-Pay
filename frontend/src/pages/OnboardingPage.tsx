@@ -80,11 +80,15 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
       inputRefs.current[field]?.focus();
       playChime('understood');
       if (field === 'phone') {
-        void speakNative(getOnboardingPhrase(preferredLang, 'phoneConfirmation', transcript), preferredLang);
+        const confirmationText = getOnboardingPhrase(preferredLang, 'phoneConfirmation', transcript);
+        console.log('[OnboardingPage] triggering speech:', confirmationText);
+        void speakNative(confirmationText, preferredLang);
       }
     } catch {
       setRecordingField(null);
-      void speakNative(getOnboardingPhrase(preferredLang, 'voiceRetryPrompt'), preferredLang);
+      const retryText = getOnboardingPhrase(preferredLang, 'voiceRetryPrompt');
+      console.log('[OnboardingPage] triggering speech:', retryText);
+      void speakNative(retryText, preferredLang);
       playChime('error');
     } finally {
       recorderRef.current = null;
@@ -185,7 +189,9 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
 
         setTimeout(() => {
           setCurrentStep(4);
-          void speakNative(`Welcome to ElderPay, ${firstName}! Your voice account has been created.`, preferredLang);
+          const welcomeText = `Welcome to ElderPay, ${firstName}! Your voice account has been created.`;
+          console.log('[OnboardingPage] triggering speech:', welcomeText);
+          void speakNative(welcomeText, preferredLang);
         }, 500);
       }
     }, 200);

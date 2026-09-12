@@ -42,10 +42,14 @@ export default function Onboarding() {
       prefetchSpeech(phrase(lang, "askEmail"), lang); // next step, fetched one step ahead
     }
     if (step === "email") {
+      console.log('[Onboarding] triggering speech:', phrase(lang, "askEmail"));
       speakNative(phrase(lang, "askEmail"), lang);
       prefetchSpeech(phrase(lang, "askAddress"), lang);
     }
-    if (step === "address") speakNative(phrase(lang, "askAddress"), lang);
+    if (step === "address") {
+      console.log('[Onboarding] triggering speech:', phrase(lang, "askAddress"));
+      speakNative(phrase(lang, "askAddress"), lang);
+    }
   }, [step]);
 
   useEffect(() => {
@@ -82,6 +86,7 @@ export default function Onboarding() {
       const account = await registerAccount({ userId, fullName, address, email, language: lang });
       setCardNumber(account.cardNumber || "");
       if (faceDescriptor) await registerFace(userId, faceDescriptor);
+      console.log('[Onboarding] triggering speech:', phrase(lang, "enrollmentComplete"));
       await speakNative(phrase(lang, "enrollmentComplete"), lang);
       setStatus("");
       setStep("done");

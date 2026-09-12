@@ -143,6 +143,7 @@ export const VirtualPosApp: React.FC<VirtualPosAppProps> = ({ onNavigate }) => {
           setBalance(prev => Math.max(0, prev - 10000));
           setStep('success');
           playChime('success');
+          console.log('[VirtualPosApp] triggering speech:', langInfo.successText);
           void speakNative(langInfo.successText, selectedLang);
         }, 350);
       }
@@ -471,6 +472,7 @@ export const VirtualPosApp: React.FC<VirtualPosAppProps> = ({ onNavigate }) => {
                     onClick={() => {
                       playChime('click');
                       setIsSpeaking(true);
+                      console.log('[VirtualPosApp] triggering speech:', langInfo.confirmationText);
                       void speakNative(langInfo.confirmationText, selectedLang, () => setIsSpeaking(false));
                     }}
                     className="retro-btn-secondary py-3 px-4 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
