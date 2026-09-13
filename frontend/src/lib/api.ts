@@ -3,7 +3,7 @@ import type {
   HealthStatus, ParsedIntent, Receipt, TransactionRecord, VoiceAuthorizeResult, VoiceStatus
 } from "../types";
 
-export const API_BASE = (import.meta.env.VITE_API_BASE as string) || "http://localhost:4000";
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) || "https://elderpay.onrender.com";
 
 async function asJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
