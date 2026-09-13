@@ -33,7 +33,7 @@ async def synthesize_speech(text: str, language: str) -> bytes:
         raise RuntimeError("YARNGPT_API_KEY not configured")
 
     voice = VOICE_BY_LANGUAGE.get(language, "Idera")
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient(timeout=60.0) as client:
         res = await client.post(
             f"{YARNGPT_BASE_URL}/tts",
             headers={"Authorization": f"Bearer {YARNGPT_API_KEY}"},
