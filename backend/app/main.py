@@ -9,7 +9,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from app.services import db, face_auth, groq_service, mock_ledger, paystack_service, stt_provider, store, transaction_service, voice_auth, yarngpt_service
+from app.services import db, face_auth, groq_service, mock_ledger, paystack_service, sahara_tts_service, stt_provider, store, transaction_service, voice_auth
 from app.services.languages import supported_languages
 from app.services.transaction_service import STATES
 
@@ -36,7 +36,7 @@ def health():
         "ok": True,
         "demoMode": True,
         "paystackConfigured": bool(paystack_service.PAYSTACK_SECRET_KEY),
-        "yarngptConfigured": bool(yarngpt_service.YARNGPT_API_KEY),
+        "saharaTtsConfigured": bool(sahara_tts_service.SAHARA_API_KEY),
         "dbConnected": db.is_ready(),
     }
 
@@ -54,8 +54,8 @@ class TtsBody(BaseModel):
 @app.post("/api/tts")
 async def tts(body: TtsBody):
     try:
-        audio = await yarngpt_service.synthesize_speech(body.text, body.language)
-        return Response(content=audio, media_type="audio/mpeg")
+        audio = await sahara_tts_service.synthesize_speech(body.text, body.language)
+        return Response(content=audio, media_type="audio/wav")
     except Exception as err:
         logger.error("tts failed: %s", err, exc_info=True)
         raise HTTPException(status_code=502, detail={"error": "TTS_UNAVAILABLE", "message": str(err)})
