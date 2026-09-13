@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mic, Volume2, ShieldCheck, CheckCircle2, RotateCcw, ArrowRight, UserCheck, XCircle, Sparkles, RefreshCw, Printer, Check } from 'lucide-react';
 import { Language } from '../types';
@@ -26,6 +26,7 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
   const [balance, setBalance] = useState(25400);
   const [isSpeakingReadback, setIsSpeakingReadback] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
+  const isProcessing = useRef(false);
 
   const langData = LANGUAGES[currentLang];
   const customer = getActiveCustomer();
@@ -36,6 +37,8 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
 
   // Handler to start voice interaction
   const handleStartListening = () => {
+    if (isProcessing.current) return;
+    isProcessing.current = true;
     stopSpeaking();
     playChime('listen');
     setStep('listening');
@@ -50,6 +53,7 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
       } else {
         clearInterval(interval);
         setTimeout(() => {
+          isProcessing.current = false;
           playChime('understood');
           setStep('understood');
           console.log('[InteractiveVoiceDemo] triggering speech:', langData.confirmationText);
