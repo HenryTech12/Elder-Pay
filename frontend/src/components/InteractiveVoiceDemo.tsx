@@ -130,7 +130,7 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
       <div className="text-center max-w-3xl mx-auto space-y-4 mb-12 sm:mb-14">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border-2 border-[#0D1B2A] shadow-[3px_3px_0px_#0D1B2A] text-[#0D1B2A] text-xs font-bold font-mono uppercase tracking-wider">
           <span className="w-2 h-2 rounded-full bg-[#FF4646] animate-ping" />
-          <span>INTERACTIVE CENTERPIECE DEMO</span>
+          <span>SCRIPTED DEMO · INTERACTIVE PREVIEW</span>
         </div>
 
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#0D1B2A] font-display">
@@ -233,7 +233,7 @@ export const InteractiveVoiceDemo: React.FC<InteractiveVoiceDemoProps> = ({
               </div>
 
               <div className="p-3.5 bg-[#FEF3C7] rounded-xl border-2 border-[#0D1B2A] shadow-[3px_3px_0px_#0D1B2A] text-xs text-[#0D1B2A] font-medium text-left">
-                💡 <strong className="font-bold">Simulated test prompt:</strong> Transfer ₦10,000 to Adewale. Tap the coral microphone above to begin!
+                💡 <strong className="font-bold">Scripted preview:</strong> the microphone replays a prepared transcript. Use the live interactive flow for real voice capture.
               </div>
             </motion.div>
           )}

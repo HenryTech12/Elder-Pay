@@ -17,7 +17,7 @@ import type { TransactionRecord, Receipt, Action, Bank } from "../types";
 
 type Step =
   | "card" | "faceAuth" | "authFailed"
-  | "listen" | "confirm" | "clarify" | "error" | "face" | "processing" | "balance" | "receipt";
+  | "listen" | "transcribing" | "confirm" | "clarify" | "error" | "face" | "processing" | "balance" | "receipt";
 
 function looksLikePhoneNumber(query: string): boolean {
   const digitsOnly = query.replace(/[\s-]/g, "");
@@ -79,6 +79,7 @@ export default function App() {
   const [userId, setUserId] = useState("");
   const [langIdx, setLangIdx] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [tx, setTx] = useState<TransactionRecord | null>(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
@@ -198,18 +199,22 @@ export default function App() {
   async function captureLoginByVoice() {
     if (isRecording) { recorderRef.current?.stop(); return; }
     setIsRecording(true);
-    const rec = await recordAudio();
-    recorderRef.current = rec;
-    rec.result.then(async (blob) => {
+    try {
+      const rec = await recordAudio();
+      recorderRef.current = rec;
+      const blob = await rec.result;
       setIsRecording(false);
-      try {
-        const { text, likely_unclear } = await voiceProcess(blob, LANGUAGES[langIdx].code);
-        if (likely_unclear || !text.trim()) throw new Error("UNCLEAR_TRANSCRIPT");
-        setLoginQuery(text);
-      } catch {
-        setLoginError("Couldn't hear that clearly — try typing instead.");
-      }
-    });
+      setIsTranscribing(true);
+      const { text, likely_unclear } = await voiceProcess(blob, LANGUAGES[langIdx].code);
+      if (likely_unclear || !text.trim()) throw new Error("UNCLEAR_TRANSCRIPT");
+      setLoginQuery(text.trim());
+    } catch {
+      setIsRecording(false);
+      setLoginError("Couldn't hear that clearly — try typing instead.");
+    } finally {
+      setIsTranscribing(false);
+      recorderRef.current = null;
+    }
   }
 
   function onKeypadPress(key: string) {
@@ -294,29 +299,35 @@ export default function App() {
 
   async function toggleListenRecording() {
     if (!isRecording) {
-      setIsRecording(true);
-      const rec = await recordAudio();
-      recorderRef.current = rec;
-      rec.result.then(async (blob) => {
+      try {
+        const rec = await recordAudio();
+        recorderRef.current = rec;
+        setIsRecording(true);
+        const blob = await rec.result;
         setIsRecording(false);
-        try {
-          const langCode = LANGUAGES[langIdx].code;
-          const { text, intent, likely_unclear } = await voiceProcess(blob, langCode);
-          if (likely_unclear || !text.trim() || !intent) {
-            const notUnderstoodText = phrase(langCode, "notUnderstood");
-            console.log('[App] triggering speech:', notUnderstoodText);
-            await speakNative(notUnderstoodText, langCode);
-            setErrorCode("NETWORK_ERROR");
-            setStep("error");
-            return;
-          }
-          setTranscript(text);
-          await handleIntent(intent);
-        } catch {
+        setIsTranscribing(true);
+        setStep("transcribing");
+        const langCode = LANGUAGES[langIdx].code;
+        const { text, intent, likely_unclear } = await voiceProcess(blob, langCode);
+        if (likely_unclear || !text.trim() || !intent) {
+          const notUnderstoodText = phrase(langCode, "notUnderstood");
+          console.log('[App] triggering speech:', notUnderstoodText);
+          await speakNative(notUnderstoodText, langCode);
           setErrorCode("NETWORK_ERROR");
           setStep("error");
+          return;
         }
-      });
+        setTranscript(text.trim());
+        await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+        await handleIntent(intent);
+      } catch {
+        setIsRecording(false);
+        setErrorCode("NETWORK_ERROR");
+        setStep("error");
+      } finally {
+        setIsTranscribing(false);
+        recorderRef.current = null;
+      }
     } else {
       recorderRef.current?.stop();
     }
@@ -443,6 +454,7 @@ export default function App() {
     faceAuth: ["Verify it's you", "A quick face check confirms it's you."],
     authFailed: ["Couldn't verify you", "Please speak with the agent for help."],
     listen: ["ElderPay", "Tap and speak — or try a quick demo phrase."],
+    transcribing: ["Transcribing", "We heard your voice. Checking what you said..."],
     confirm: ["Confirm", "Check the details before continuing."],
     clarify: ["One more thing", "I need a bit more detail."],
     error: ["Let's try that again", ""],
@@ -489,7 +501,10 @@ export default function App() {
                 placeholder="Name or phone number"
                 disabled={inserting}
               />
-              <button style={{ ...s.micBtn, ...(isRecording ? s.micBtnRecording : {}) }} onClick={captureLoginByVoice}>🎤</button>
+              <button style={{ ...s.micBtn, ...(isRecording ? s.micBtnRecording : {}) }} onClick={captureLoginByVoice} disabled={isTranscribing}>{isRecording ? "■" : "🎤"}</button>
+              <div style={s.voiceStatus} aria-live="polite">
+                {isRecording ? "Listening... tap again when you are finished." : isTranscribing ? "Transcribing..." : "Tap the microphone to speak."}
+              </div>
               {loginError && <div style={s.cardErrorText}>{loginError}</div>}
               {nameMatches && nameMatches.length > 1 && (
                 <div style={{ width: "100%" }}>
@@ -545,9 +560,10 @@ export default function App() {
                 ))}
               </div>
               <div style={s.micStage}>
-                <button style={{ ...s.micBtn, ...(isRecording ? s.micBtnRecording : {}) }} onClick={toggleListenRecording}>🎤</button>
+                <button style={{ ...s.micBtn, ...(isRecording ? s.micBtnRecording : {}) }} onClick={toggleListenRecording} disabled={isTranscribing}>{isRecording ? "■" : "🎤"}</button>
+                <div style={s.voiceStatus} aria-live="polite">{isRecording ? "Listening... tap again when you are finished." : "Tap the microphone to speak."}</div>
                 <div style={s.transcript}>{transcript || "\u00A0"}</div>
-                <div style={s.hint}>Tap and speak, e.g. "Send 10,000 to Adewale"</div>
+                <div style={s.hint}>Your words will appear here before ElderPay acts on them.</div>
                 <div style={s.quickRow}>
                   <span className="clickable" style={s.quickBtn} onClick={() => quickDemo("send")}>Demo: Send ₦10,000</span>
                   <span className="clickable" style={s.quickBtn} onClick={() => quickDemo("balance")}>Demo: Check balance</span>
@@ -557,6 +573,14 @@ export default function App() {
                 </div>
               </div>
             </>
+          )}
+
+          {step === "transcribing" && (
+            <div style={s.micStage} aria-live="polite">
+              <div style={{ ...s.micBtn, ...s.micBtnRecording, cursor: "default" }}>🎤</div>
+              <div style={s.voiceStatus}>Transcribing...</div>
+              <div style={s.transcript}>{transcript || "Listening finished. Sending your words..."}</div>
+            </div>
           )}
 
           {step === "confirm" && tx && (
@@ -734,6 +758,7 @@ const s: Record<string, React.CSSProperties> = {
   micStage: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, gap: 14, padding: "4px 0" },
   micBtn: { width: 92, height: 92, borderRadius: "50%", border: "none", background: "linear-gradient(150deg, var(--gold-light), var(--gold))", color: "#fff", fontSize: 32, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "var(--shadow-gold)" },
   micBtnRecording: { background: "linear-gradient(150deg, #d9564a, var(--alert))", animation: "micRing 1.4s ease-out infinite" },
+  voiceStatus: { fontSize: 14, fontWeight: 700, color: "var(--indigo)", textAlign: "center" },
   hint: { fontSize: "12.5px", color: "#6b6357", textAlign: "center", maxWidth: 290 },
   transcript: { fontFamily: "Fraunces, serif", fontSize: "16.5px", textAlign: "center", color: "var(--indigo)", minHeight: 24, padding: "0 8px" },
   quickRow: { display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap", justifyContent: "center" },

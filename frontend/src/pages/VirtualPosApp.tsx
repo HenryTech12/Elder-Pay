@@ -190,7 +190,7 @@ export const VirtualPosApp: React.FC<VirtualPosAppProps> = ({ onNavigate }) => {
 
           <div className="flex items-center gap-2">
             <span className="text-xs bg-[#FF4646] text-white font-mono font-bold px-3 py-1.5 rounded-full border-2 border-[#0D1B2A] shadow-[2px_2px_0px_#0D1B2A]">
-              SAHARA HACKATHON DEMO
+              SCRIPTED DEMO · SAHARA HACKATHON
             </span>
             <button
               onClick={handleCompleteReset}
@@ -207,10 +207,10 @@ export const VirtualPosApp: React.FC<VirtualPosAppProps> = ({ onNavigate }) => {
           <div className="space-y-1 text-left">
             <div className="flex items-center gap-2 text-[#FF4646] font-extrabold text-xs uppercase tracking-wider font-mono">
               <Sparkles className="w-4 h-4 text-[#FF4646]" />
-              <span>Target Judge Evaluation Flow (20-30s)</span>
+              <span>Scripted Demo · 20-30s end-to-end</span>
             </div>
             <p className="text-xs text-gray-300 font-medium">
-              1. Customer → 2. Language → 3. Speak Intent → 4. AI Interprets → 5. Confirm & Face Check → 6. Instant Receipt.
+              This preview replays a prepared voice transcript and payment flow. For live microphone capture, use the interactive ElderPay flow.
             </p>
           </div>
           <button
