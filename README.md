@@ -1,6 +1,6 @@
 # ElderPay
 
-Voice-first banking for people the app-based banking model leaves out — built for the **NITHUB Innovation Fair Hackathon 2026**.
+Voice-first banking for people the app-based banking model leaves out.
 
 ## The problem
 
